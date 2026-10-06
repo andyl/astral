@@ -13,6 +13,12 @@ Use normal `<a>` elements in `.astral`, Markdown, and layouts:
 <a href="/blog/hello-astral/">Read the post</a>
 ```
 
+When the site is served under a `base_path`, build site links with `Astral.url/2` so they carry the prefix:
+
+```astral
+<a href={Astral.url(@site, "/about/")}>About</a>
+```
+
 Astral does not currently inject a client-side router. A link click performs a normal browser navigation unless your own JavaScript intercepts it.
 
 ## Internationalized routes today

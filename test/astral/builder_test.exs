@@ -798,6 +798,36 @@ defmodule Astral.BuilderTest do
     assert read("site_dist/index.html") == "<h1>Home</h1>"
   end
 
+  test "builds a site served under a base path" do
+    write("assets/images/mark.svg", svg_image(10, 10, "blue"))
+    write("assets/images/hero.svg", svg_image(120, 60, "red"))
+    write("assets/styles.css", ".mark { background: url(\"./images/mark.svg\") }")
+    write("pages/about.md", "# About")
+
+    write("pages/index.astral", ~S'''
+    <link rel="stylesheet" href={Astral.asset_path(@site, "styles.css")} />
+    <a href={Astral.url(@site, "/about/")}>About</a>
+    <.image src="images/hero.svg" alt="Hero" width={60} format={:webp} />
+    ''')
+
+    assert {:ok, _result} =
+             Astral.build(
+               root: tmp(),
+               layout: false,
+               base_path: "/demo_site/",
+               asset_entry: ["styles.css"],
+               asset_hash: false
+             )
+
+    html = read("dist/index.html")
+    assert html =~ ~s(href="/demo_site/assets/styles.css")
+    assert html =~ ~s(href="/demo_site/about/")
+    assert html =~ ~r/src="\/demo_site\/assets\/hero-60x30-[^"]+\.webp"/
+    assert read("dist/about/index.html") =~ "About"
+    assert read("dist/assets/styles.css") =~ "/demo_site/assets/"
+    refute File.exists?(Path.join(tmp(), "dist/demo_site"))
+  end
+
   test "builds Volt assets when an asset entry exists" do
     write("pages/index.html", "<h1>Home</h1>")
     write("assets/app.js", "console.log('astral')")

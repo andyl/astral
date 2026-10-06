@@ -191,4 +191,6 @@ paths =
 </ul>
 ```
 
+`post.route_path` is relative to the site's `base_path`. When the site is served under a sub-path, link with `Astral.url(@site, post.route_path)` instead.
+
 Save this as `pages/tags/[tag].astral`. Each item in `paths` is an `Astral.Route.Path` contract produced by `path/1`, not an arbitrary map. The `path/1` params, rendered `@params`, and page assigns all use atom keys.
