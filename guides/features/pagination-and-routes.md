@@ -137,7 +137,7 @@ The pagination layout receives `@page`, `@collection`, `@site`, `@collections`, 
 
 <%= for entry <- @page.entries do %>
   <article>
-    <h2><a href="<%= entry.route_path %>"><%= entry.data.title %></a></h2>
+    <h2><a href="<%= Astral.url(@site, entry.route_path) %>"><%= entry.data.title %></a></h2>
   </article>
 <% end %>
 
@@ -152,6 +152,8 @@ The pagination layout receives `@page`, `@collection`, `@site`, `@collections`, 
 </nav>
 ```
 
+`@page.urls` already include the site's `base_path`. `entry.route_path` does not, so link entries through `Astral.url/2`.
+
 ## Lower-level pagination helpers
 
 Use `Astral.Pagination` directly for custom generated indexes:
@@ -161,6 +163,8 @@ entries
 |> Astral.Pagination.pages(pattern: "/blog/*page", page_size: 10)
 |> Astral.Pagination.routes(site.config, assigns: %{collection: :posts})
 ```
+
+`pages/2` returns route paths relative to the base path. `routes/3` keeps those as route paths and gives each route's `:page` assign URLs with the base path applied.
 
 ## Route patterns
 

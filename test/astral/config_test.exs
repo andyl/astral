@@ -151,4 +151,50 @@ defmodule Astral.ConfigTest do
     assert Enum.find(schema.fields, &(&1.name == :draft)).default == false
     assert Enum.find(schema.fields, &(&1.name == :tags)).default == []
   end
+
+  test "site DSL sets a base path and site URL" do
+    config =
+      site do
+        root("/tmp/astral")
+        site_url("https://andyl.github.io")
+        base_path("demo_site")
+
+        assets do
+          url_prefix("/static")
+        end
+      end
+
+    assert config.site_url == "https://andyl.github.io"
+    assert config.base_path == "/demo_site/"
+    assert config.asset_url_prefix == "/demo_site/static"
+  end
+
+  test "base path defaults to the domain root" do
+    config = Astral.Config.new(root: "/tmp/astral")
+
+    assert config.base_path == "/"
+    assert config.site_url == nil
+    assert config.asset_url_prefix == "/assets"
+  end
+
+  test "base path prefixes the default asset URL prefix but not absolute prefixes" do
+    assert Astral.Config.new(root: "/tmp/astral", base_path: "/docs/").asset_url_prefix ==
+             "/docs/assets"
+
+    assert Astral.Config.new(
+             root: "/tmp/astral",
+             base_path: "/docs/",
+             asset_url_prefix: "https://cdn.example.com/assets"
+           ).asset_url_prefix == "https://cdn.example.com/assets"
+  end
+
+  test "rejects invalid base paths and site URLs" do
+    assert_raise ArgumentError, ~r/base_path/, fn ->
+      Astral.Config.new(root: "/tmp/astral", base_path: "https://example.com/docs/")
+    end
+
+    assert_raise ArgumentError, ~r/site_url/, fn ->
+      Astral.Config.new(root: "/tmp/astral", site_url: "example.com")
+    end
+  end
 end

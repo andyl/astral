@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- A top-level `base_path` serves a site below the domain root, such as a GitHub Pages project site at `https://<user>.github.io/<repo>/`. Asset, image, pagination, feed, sitemap and `llms.txt` URLs include it, and `mix astral.dev` serves the site only under it. Route paths stay relative to it.
+- `Astral.url/2` builds links that include the base path, and `Astral.absolute_url/2` builds absolute ones.
+- A top-level `site_url`, used by the feed, sitemap and `llms.txt` plugins when their `:site_url` option is omitted.
+
 ## 0.7.0 - 2026-10-05
 
 ### Added

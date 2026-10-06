@@ -4,10 +4,16 @@ defmodule Astral.Config do
 
   Paths are stored as absolute paths so downstream modules can work without
   repeatedly resolving them against the site root.
+
+  `base_path` is normalized with leading and trailing slashes, such as `"/"` or
+  `"/docs/"`. The configured asset URL prefix is relative to it, so
+  `asset_url_prefix` holds the public prefix with the base path applied.
   """
 
   @type t :: %__MODULE__{
           root: String.t(),
+          base_path: String.t(),
+          site_url: String.t() | nil,
           pages: String.t(),
           layouts: String.t(),
           components: String.t(),
@@ -27,6 +33,8 @@ defmodule Astral.Config do
         }
 
   defstruct root: nil,
+            base_path: "/",
+            site_url: nil,
             pages: nil,
             layouts: nil,
             components: nil,
@@ -59,6 +67,12 @@ defmodule Astral.Config do
 
   @doc "Set the site root against which relative configuration paths are resolved."
   defdirective(root(path), do: Scope.put_top_level(root: path))
+
+  @doc ~S(Set the URL path the site is served under, such as `"/docs/"`. Defaults to `"/"`.)
+  defdirective(base_path(path), do: Scope.put_top_level(base_path: path))
+
+  @doc "Set the absolute site URL used by feeds, sitemaps and other absolute links."
+  defdirective(site_url(url), do: Scope.put_top_level(site_url: url))
 
   @doc "Set the directory containing file-based pages."
   defdirective(pages(path), do: Scope.put_top_level(pages: path))
@@ -273,9 +287,12 @@ defmodule Astral.Config do
     assets = path(opts, :assets, root, "assets")
 
     plugins = configured_plugins(opts)
+    base_path = opts |> Keyword.get(:base_path, "/") |> Astral.URL.normalize_base_path!()
 
     config = %__MODULE__{
       root: root,
+      base_path: base_path,
+      site_url: opts |> Keyword.get(:site_url) |> Astral.URL.validate_site_url!(),
       pages: path(opts, :pages, root, "pages"),
       layouts: path(opts, :layouts, root, "layouts"),
       components: path(opts, :components, root, "components"),
@@ -284,7 +301,8 @@ defmodule Astral.Config do
       outdir: outdir,
       asset_entry: asset_entries(opts, assets),
       asset_outdir: path(opts, :asset_outdir, outdir, "assets"),
-      asset_url_prefix: Keyword.get(opts, :asset_url_prefix, "/assets"),
+      asset_url_prefix:
+        Astral.URL.join(base_path, Keyword.get(opts, :asset_url_prefix, "/assets")),
       asset_hash: Keyword.get(opts, :asset_hash, true),
       layout: Keyword.get(opts, :layout, "default.html"),
       markdown: Keyword.get(opts, :markdown, []),

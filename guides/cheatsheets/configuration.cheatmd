@@ -20,6 +20,19 @@ public "public"
 components "components"
 ```
 
+## Site URL and base path
+
+```elixir
+site_url "https://andyl.github.io"
+base_path "/demo_site/"
+```
+
+`base_path` defaults to `"/"`. Link to routes through it with `Astral.url/2`:
+
+```astral
+<a href={Astral.url(@site, "/about/")}>About</a>
+```
+
 ## Layouts
 
 ```elixir

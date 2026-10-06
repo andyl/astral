@@ -38,6 +38,35 @@ Public files are copied from `public/` without transformation. This is the right
 
 For generated host files that depend on site data, use config `get` routes or plugins to write files into `dist/` during the build.
 
+## Serving under a base path
+
+Some hosts serve a site below the domain root. GitHub Pages serves project sites at `https://<user>.github.io/<repo>/`, and a Phoenix app can mount docs at `/docs/`. Set `base_path` so Astral emits URLs under that path:
+
+```elixir
+site_url "https://andyl.github.io"
+base_path "/demo_site/"
+```
+
+`base_path` defaults to `"/"`. Output files stay at the root of `dist/`: publish `dist/` as the content of the sub-path. Route paths such as `page.route_path`, `entry.route_path`, and plugin options such as `exclude:` stay relative to the base path.
+
+Astral applies the base path wherever it produces a URL:
+
+- `Astral.asset_path/2`, Volt's asset prefix, and `url()` references in built CSS,
+- optimized image URLs,
+- `@page.urls` in pagination routes,
+- feed, sitemap, and `llms.txt` links.
+
+Links you write yourself need it too. Build them with `Astral.url/2`:
+
+```astral
+<a href={Astral.url(@site, "/about/")}>About</a>
+<a href={Astral.url(@site, post.route_path)}>{post.data.title}</a>
+```
+
+Absolute URLs, fragments, and relative links pass through unchanged. Astral does not rewrite root-relative links written directly in Markdown or HTML, such as `[About](/about/)`: write those with the base path, or use relative links. `mix astral.dev` serves the site only under `base_path`, so a link missing the prefix returns 404 in development as it would when deployed.
+
+`site_url` is the site's origin. Feed, sitemap, and `llms.txt` plugins use it when their own `:site_url` option is omitted, and `Astral.absolute_url/2` combines it with the base path.
+
 ## Assets
 
 Astral delegates JavaScript, TypeScript, CSS, and referenced asset processing to Volt. Configure the source entry in `astral.config.exs`:
@@ -55,7 +84,7 @@ Reference the source entry from layouts:
 <script type="module" src="<%= Astral.asset_path(@site, "app.ts") %>"></script>
 ```
 
-In static builds, `Astral.asset_path/2` reads Volt's manifest and returns emitted files such as `/assets/app-5e6f7a8b.js`.
+In static builds, `Astral.asset_path/2` reads Volt's manifest and returns emitted files such as `/assets/app-5e6f7a8b.js`. The `url_prefix` is relative to `base_path`: with `base_path "/docs/"`, the same file is `/docs/assets/app-5e6f7a8b.js`.
 
 ## Content hashes
 
