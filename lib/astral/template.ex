@@ -27,8 +27,27 @@ defmodule Astral.Template do
   @spec render_file(String.t(), map() | keyword(), Astral.Config.t()) ::
           {:ok, String.t()} | {:error, term()}
   def render_file(path, assigns, %Astral.Config{} = config) do
+    with {:ok, html, _assigns} <- render_page_file(path, assigns, config) do
+      {:ok, html}
+    end
+  end
+
+  @doc """
+  Render a `.astral` page file and return the assigns left by its setup block.
+
+  The setup block runs once; callers read page-level settings such as
+  `:layout` from the returned assigns instead of evaluating setup again.
+  """
+  @spec render_page_file(String.t(), map() | keyword(), Astral.Config.t()) ::
+          {:ok, String.t(), map()} | {:error, term()}
+  def render_page_file(path, assigns, %Astral.Config{} = config) do
     with {:ok, source} <- File.read(path) do
-      render_source(%Source{path: path, source: source}, :__astral_page__, assigns, config)
+      {result, page_assigns} =
+        Astral.Template.Context.capture_page_assigns(fn ->
+          render_source(%Source{path: path, source: source}, :__astral_page__, assigns, config)
+        end)
+
+      with {:ok, html} <- result, do: {:ok, html, page_assigns || assigns_map(assigns)}
     end
   end
 
@@ -100,6 +119,7 @@ defmodule Astral.Template do
     {setup, template, line} = Source.split(source.source)
     template = clean_template!(template, source.path, line)
     setup_ast = setup_ast(setup, source.path)
+    capture_ast = capture_ast(function)
 
     quote line: line do
       @file unquote(source.path)
@@ -111,12 +131,19 @@ defmodule Astral.Template do
           var!(assigns) = Map.put_new(var!(assigns), :__changed__, nil)
           _ = var!(assigns)
           unquote(setup_ast)
+          unquote(capture_ast)
           _ = binding()
           Astral.Template.HEEx.compile(unquote(template), unquote(source.path), unquote(line))
         end)
       end
     end
   end
+
+  defp capture_ast(:__astral_page__) do
+    quote do: Astral.Template.Context.put_page_assigns(var!(assigns))
+  end
+
+  defp capture_ast(_function), do: nil
 
   defp setup_function_ast(setup_ast) do
     quote do

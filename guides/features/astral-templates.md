@@ -94,7 +94,36 @@ assigns = assign(assigns, :title, "Home")
 <.pill>Static HTML</.pill>
 ```
 
-The setup block is Elixir. It receives `assigns` and should return updated assigns when adding values.
+The setup block is Elixir, not YAML frontmatter. It receives `assigns` and should return updated assigns when adding values. Markdown-style `key: value` lines are an Elixir syntax error here.
+
+### Choosing a layout
+
+A page uses the site default layout unless its setup block assigns `:layout`. The value can be a layout file name, or `false`, `"none"` or `"false"` to render without a layout, the same as Markdown frontmatter:
+
+```astral
+---
+assigns = assign(assigns, :layout, "one_col.html")
+---
+
+<div class="mx-auto max-w-2xl">...</div>
+```
+
+The setup block runs once per render, and Astral picks the layout after the page renders. The layout is chosen in this order:
+
+1. The `:layout` assign from the setup block.
+2. The page's inherited layout, available as `@page.layout`. For a dynamic page that renders a collection entry, this is the entry's frontmatter `layout` or the collection's `layout`.
+3. The site default `layout` from `astral.config.exs`.
+
+A dynamic page can keep the entry's layout and override it only for some entries:
+
+```astral
+---
+layout = if @entry.data.wide, do: "wide.html", else: @page.layout
+assigns = assign(assigns, :layout, layout)
+---
+```
+
+Other setup-block assigns are not passed to the layout. The layout receives the assigns listed under [Layouts](pages-and-layouts.md#layouts).
 
 ## Layouts
 

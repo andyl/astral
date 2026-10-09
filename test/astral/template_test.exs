@@ -295,6 +295,42 @@ defmodule Astral.TemplateTest do
            ]
   end
 
+  test "returns page assigns left by the setup block" do
+    write("page.astral", """
+    ---
+    assigns = assign(assigns, :layout, "one_col.html")
+    ---
+    <p>{@title}</p>
+    """)
+
+    config = Astral.Config.new(root: tmp(), pages: ".")
+
+    assert {:ok, "<p>Home</p>", assigns} =
+             Astral.Template.render_page_file(path("page.astral"), %{title: "Home"}, config)
+
+    assert assigns.layout == "one_col.html"
+    assert assigns.title == "Home"
+    refute Map.has_key?(assigns, :__changed__)
+  end
+
+  test "does not capture assigns from components rendered by a page" do
+    write("components/card.astral", """
+    ---
+    assigns = assign(assigns, :layout, "component.html")
+    ---
+    <span>card</span>
+    """)
+
+    write("page.astral", "<.card />")
+
+    config = Astral.Config.new(root: tmp(), pages: ".", components: "components")
+
+    assert {:ok, "<span>card</span>", assigns} =
+             Astral.Template.render_page_file(path("page.astral"), %{}, config)
+
+    refute Map.has_key?(assigns, :layout)
+  end
+
   test "reuses compiled modules while template sources are unchanged" do
     write("page.astral", "<p>Hello</p>")
     config = Astral.Config.new(root: tmp(), pages: ".")

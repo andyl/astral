@@ -713,6 +713,131 @@ defmodule Astral.BuilderTest do
     assert path == Path.join(tmp(), "pages/index.md")
   end
 
+  test "uses Astral setup block layout assign" do
+    write("pages/index.astral", ~S'''
+    ---
+    assigns = assign(assigns, :layout, "one_col.html")
+    ---
+    <p>Home</p>
+    ''')
+
+    write("pages/about.astral", "<p>About</p>")
+    write("layouts/default.html", "<default><%= @content %></default>")
+    write("layouts/one_col.html", "<one-col><%= @route %>:<%= @content %></one-col>")
+
+    assert {:ok, _result} = Astral.build(root: tmp())
+
+    assert read("dist/index.html") == "<one-col>/:<p>Home</p></one-col>"
+    assert read("dist/about/index.html") == "<default><p>About</p></default>"
+  end
+
+  test "uses Astral layouts selected from setup block" do
+    write("pages/index.astral", ~S'''
+    ---
+    assigns = assign(assigns, :layout, "wide.astral")
+    ---
+    <p>Home</p>
+    ''')
+
+    write("layouts/wide.astral", "<wide>{@content}</wide>")
+
+    assert {:ok, _result} = Astral.build(root: tmp())
+
+    assert read("dist/index.html") == "<wide><p>Home</p></wide>"
+  end
+
+  for disabled <- [false, "none", "false"] do
+    test "supports disabling layout from setup block with #{inspect(disabled)}" do
+      write("pages/index.astral", """
+      ---
+      assigns = assign(assigns, :layout, #{inspect(unquote(disabled))})
+      ---
+      <p>Home</p>
+      """)
+
+      write("layouts/default.html", "<default><%= @content %></default>")
+
+      assert {:ok, _result} = Astral.build(root: tmp())
+
+      assert read("dist/index.html") == "<p>Home</p>"
+    end
+  end
+
+  test "returns an error for missing setup block layout" do
+    write("pages/index.astral", ~S'''
+    ---
+    assigns = assign(assigns, :layout, "missing.html")
+    ---
+    <p>Home</p>
+    ''')
+
+    assert {:error, {:missing_layout, path, "missing.html"}} = Astral.build(root: tmp())
+    assert path == Path.join(tmp(), "pages/index.astral")
+  end
+
+  test "runs Astral page setup blocks once per render" do
+    write("pages/index.astral", ~S'''
+    ---
+    send(self(), :setup_ran)
+    assigns = assign(assigns, :layout, "one_col.html")
+    ---
+    <p>Home</p>
+    ''')
+
+    write("layouts/one_col.html", "<one-col><%= @content %></one-col>")
+
+    assert {:ok, _result} = Astral.build(root: tmp())
+
+    assert_received :setup_ran
+    refute_received :setup_ran
+  end
+
+  test "setup block layout overrides collection layout for dynamic entry pages" do
+    write("pages/blog/[slug].astral", ~S'''
+    ---
+    assigns = assign(assigns, :layout, if(@entry.data.wide, do: "wide.html", else: @page.layout))
+    ---
+    <h1>{@entry.data.title}</h1>
+    ''')
+
+    write("content/posts/hello.md", """
+    ---
+    title: Hello
+    wide: true
+    ---
+    """)
+
+    write("content/posts/narrow.md", """
+    ---
+    title: Narrow
+    wide: false
+    ---
+    """)
+
+    write("layouts/post.html", "<post><%= @content %></post>")
+    write("layouts/wide.html", "<wide><%= @content %></wide>")
+
+    config =
+      Astral.Config.new(
+        root: tmp(),
+        layout: false,
+        collections: [
+          [
+            name: :posts,
+            dir: "content/posts",
+            permalink: "/blog/:slug/",
+            layout: "post.html",
+            schema: schema(%{required(:title) => String.t(), required(:wide) => boolean()})
+          ]
+        ]
+      )
+
+    assert {:ok, _result} = Astral.build(config)
+
+    assert read("dist/blog/hello/index.html") == "<wide><h1>Hello</h1></wide>"
+    assert read("dist/blog/narrow/index.html") == "<post><h1>Narrow</h1></post>"
+  end
+
   test "renders layout assigns from page metadata" do
     write("pages/index.md", """
     ---

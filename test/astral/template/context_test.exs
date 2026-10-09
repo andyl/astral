@@ -42,4 +42,14 @@ defmodule Astral.Template.ContextTest do
 
     assert Context.current_source() == nil
   end
+
+  test "captures page assigns without leaking them past the capture" do
+    assert {:ok, %{layout: "one_col.html"}} =
+             Context.capture_page_assigns(fn ->
+               Context.put_page_assigns(%{layout: "one_col.html", __changed__: nil})
+               :ok
+             end)
+
+    assert {:ok, nil} = Context.capture_page_assigns(fn -> :ok end)
+  end
 end

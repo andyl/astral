@@ -34,6 +34,8 @@ permalink: /about-us/
 
 Set `layout: false` to render a page without a layout.
 
+`.astral` pages have an Elixir setup block instead of YAML frontmatter. They choose a layout by assigning `:layout` in that block. See [Choosing a layout](astral-templates.md#choosing-a-layout).
+
 ## Components in Markdown
 
 Markdown pages and collection entries can use local `.astral` components through MDEx's HEEx integration:
