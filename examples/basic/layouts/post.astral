@@ -1,0 +1,12 @@
+<Layouts.base {assigns} title={"#{@entry.data.title} — Astral Basic"}>
+  <Site.header />
+
+  <article class="page post" data-route={@route}>
+    <p class="eyebrow">Collection: {@entry.collection}</p>
+    <h1>{@entry.data.title}</h1>
+    <p class="post-meta">{@entry.data.date} · {Enum.join(@entry.data.tags, ", ")}</p>
+    {render_slot(@inner_block)}
+  </article>
+
+  <Site.footer />
+</Layouts.base>

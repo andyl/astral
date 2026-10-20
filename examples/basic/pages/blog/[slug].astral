@@ -1,4 +1,6 @@
-<section class="dynamic-post" data-slug={@params.slug}>
-  <p class="eyebrow">Rendered by <code>pages/blog/[slug].astral</code></p>
-  {@entry.content}
-</section>
+<Layouts.post {assigns}>
+  <section class="dynamic-post" data-slug={@params.slug}>
+    <p class="eyebrow">Rendered by <code>pages/blog/[slug].astral</code></p>
+    {@entry.content}
+  </section>
+</Layouts.post>
