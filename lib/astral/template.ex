@@ -4,11 +4,13 @@ defmodule Astral.Template do
 
   A `.astral` file is a small single-file template: an optional leading Elixir
   setup block delimited by `---`, followed by HEEx markup. Component files under
-  the configured components directory become local HEEx function components, so
-  `components/formatted_date.astral` is called as `<.formatted_date />`.
+  the configured components directory become HEEx function components:
+  `components/formatted_date.astral` is called as `<.formatted_date />` and
+  `components/article/figure.astral` as `<Article.figure />`. See
+  `Astral.Template.Namespace`.
   """
 
-  alias Astral.Template.Source
+  alias Astral.Template.{Namespace, Source}
 
   @extension ".astral"
 
@@ -62,10 +64,10 @@ defmodule Astral.Template do
   defdelegate current_source(), to: Astral.Template.Context
 
   defp render_source(%Source{} = source, function, assigns, config) do
-    components = component_sources(config.components)
-    module = module_name(config, function, components, source)
-
-    with {:ok, quoted} <- module_ast(module, components, {function, source}),
+    with {:ok, namespace} <- Namespace.discover(config.components, config.root),
+         :ok <- compile_namespace(namespace),
+         module = module_name(config, function, namespace, source),
+         {:ok, quoted} <- module_ast(module, namespace, [{function, source}]),
          {:ok, _module} <- Astral.Template.Compiler.compile(module, quoted, source.path) do
       html =
         Astral.Template.Context.with_source(source.path, fn ->
@@ -76,8 +78,55 @@ defmodule Astral.Template do
     end
   end
 
-  defp module_ast(module, components, page) do
-    definitions = Enum.map(components ++ [page], &function_ast/1)
+  # All component modules compile as one unit: the root module comes first
+  # because the others import it, and remote calls between directory modules
+  # are verified only after every module in the unit exists.
+  defp compile_namespace(%Namespace{} = namespace) do
+    root = Namespace.root_module(namespace)
+
+    [{root, namespace.root} | Enum.sort(namespace.modules)]
+    |> Enum.reduce_while({:ok, []}, fn {module, definitions}, {:ok, acc} ->
+      case module_ast(module, namespace, definitions) do
+        {:ok, quoted} -> {:cont, {:ok, [quoted | acc]}}
+        error -> {:halt, error}
+      end
+    end)
+    |> case do
+      {:ok, quoted} ->
+        block = {:__block__, [], Enum.reverse(quoted)}
+
+        with {:ok, _root} <- Astral.Template.Compiler.compile(root, block, "components"),
+             do: :ok
+
+      error ->
+        error
+    end
+  end
+
+  defp module_ast(module, %Namespace{} = namespace, definitions) do
+    with :ok <- check_setup_aliases(definitions, namespace) do
+      do_module_ast(module, namespace, definitions)
+    end
+  rescue
+    error in [SyntaxError, TokenMissingError] -> {:error, error}
+  end
+
+  defp check_setup_aliases(definitions, namespace) do
+    Enum.reduce_while(definitions, :ok, fn {_function, %Source{} = source}, :ok ->
+      {setup, _template, _line} = Source.split(source.source)
+
+      case Namespace.check_setup_aliases(setup_ast(setup, source.path), namespace, source.path) do
+        :ok -> {:cont, :ok}
+        error -> {:halt, error}
+      end
+    end)
+  end
+
+  defp do_module_ast(module, namespace, definitions) do
+    definitions = Enum.map(definitions, &function_ast/1)
+    root = Namespace.root_module(namespace)
+    import_root = if module != root, do: quote(do: import(unquote(root)))
+    aliases = Enum.map(namespace.aliases, &quote(do: alias(unquote(&1))))
 
     {:ok,
      quote generated: true do
@@ -88,12 +137,12 @@ defmodule Astral.Template do
          import PhoenixIconify, only: [icon: 1]
          import Phoenix.HTML
          require Astral.Template.HEEx
+         unquote(import_root)
+         unquote_splicing(aliases)
 
          unquote_splicing(definitions)
        end
      end}
-  rescue
-    error in [SyntaxError, TokenMissingError] -> {:error, error}
   end
 
   defp function_ast({function, %Source{} = source}) do
@@ -147,7 +196,7 @@ defmodule Astral.Template do
 
   defp setup_binding(%Source{} = source, assigns, config) do
     {setup, _template, _line} = Source.split(source.source)
-    module = module_name(config, :__astral_setup__, [], source)
+    module = module_name(config, :__astral_setup__, %Namespace{}, source)
 
     with {:ok, setup_ast} <- quoted_setup(setup, source.path),
          {:ok, _module} <-
@@ -201,33 +250,6 @@ defmodule Astral.Template do
     end)
   end
 
-  defp component_sources(dir) do
-    if File.dir?(dir) do
-      dir
-      |> Path.join("**/*#{@extension}")
-      |> Path.wildcard()
-      |> Enum.sort()
-      |> Enum.map(&component_source(&1, dir))
-    else
-      []
-    end
-  end
-
-  defp component_source(path, dir) do
-    path
-    |> function_name(dir)
-    |> then(&{&1, %Source{path: path, source: File.read!(path)}})
-  end
-
-  defp function_name(path, dir) do
-    path
-    |> Path.relative_to(dir)
-    |> Path.rootname(@extension)
-    |> Path.split()
-    |> Enum.map_join("_", &Macro.underscore/1)
-    |> then(&:"#{&1}")
-  end
-
   defp assigns_map(assigns) when is_map(assigns), do: assigns
   defp assigns_map(assigns) when is_list(assigns), do: Map.new(assigns)
 
@@ -237,12 +259,8 @@ defmodule Astral.Template do
     |> IO.iodata_to_binary()
   end
 
-  defp module_name(config, function, components, %Source{} = source) do
-    fingerprint =
-      {config.root, function,
-       Enum.map(components ++ [{function, source}], fn
-         {name, %Source{path: path, source: source}} -> {name, path, source}
-       end)}
+  defp module_name(config, function, %Namespace{base: base}, %Source{} = source) do
+    fingerprint = {config.root, function, base, source.path, source.source}
 
     hash =
       :sha256
