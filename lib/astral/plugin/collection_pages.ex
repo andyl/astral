@@ -59,8 +59,8 @@ defmodule Astral.Plugin.CollectionPages do
   defp render_collection_page(route, site, opts) do
     content = Keyword.get(opts, :content, "")
 
-    with {:ok, layout} <- route_layout(route, site, opts),
-         {:ok, html} <- Astral.Layout.render_route(content, layout, route, site) do
+    with {:ok, html} <-
+           Astral.Layout.render_route(content, Keyword.get(opts, :layout), route, site) do
       {:ok, html, route.content_type}
     end
   end
@@ -87,19 +87,6 @@ defmodule Astral.Plugin.CollectionPages do
 
       direction when direction in [:asc, :desc] ->
         Astral.Collection.sort_by_date(entries, direction)
-    end
-  end
-
-  defp route_layout(route, site, opts) do
-    case Keyword.get(opts, :layout, site.config.layout) do
-      value when value in [false, "false", "none", nil] ->
-        {:ok, nil}
-
-      layout_name ->
-        case Map.fetch(site.layouts, layout_name) do
-          {:ok, layout} -> {:ok, layout}
-          :error -> {:error, {:missing_layout, route.path, layout_name}}
-        end
     end
   end
 end

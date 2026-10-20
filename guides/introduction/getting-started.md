@@ -73,7 +73,7 @@ astral.config.exs
 pages/
   index.md
 layouts/
-  default.html
+  default.astral
 assets/
   app.ts
   styles.css
@@ -94,7 +94,7 @@ root "."
 outdir "dist"
 
 layouts do
-  default "default.html"
+  default "default"
 end
 
 assets do

@@ -6,7 +6,7 @@ outdir "dist"
 plugin Astral.Plugin.LLMs, title: <%= inspect(@project_name) %>
 
 layouts do
-  default "default.html"
+  default "default"
 end
 
 assets do

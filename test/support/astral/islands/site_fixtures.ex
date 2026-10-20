@@ -155,15 +155,17 @@ defmodule Astral.Islands.SiteFixtures do
     ''')
 
     write(root, "pages/index.astral", ~S'''
-    <.vue component="islands/Shell.vue" client={:media} media="(min-width: 1500px)" id="delayed-parent">
-      <.vue component="islands/Styled.vue" props={%{label: "Nested one"}} id="nested-one" />
-      <.vue component="islands/Styled.vue" props={%{label: "Nested two"}} id="nested-two" />
-    </.vue>
+    <Layouts.site>
+      <.vue component="islands/Shell.vue" client={:media} media="(min-width: 1500px)" id="delayed-parent">
+        <.vue component="islands/Styled.vue" props={%{label: "Nested one"}} id="nested-one" />
+        <.vue component="islands/Styled.vue" props={%{label: "Nested two"}} id="nested-two" />
+      </.vue>
+    </Layouts.site>
     ''')
 
     write(root, "layouts/site.astral", ~S'''
     <!doctype html><html><head></head><body>
-    {@content}
+    {render_slot(@inner_block)}
     <.vue component="islands/Styled.vue" props={%{label: "Outside"}} id="outside" />
     </body></html>
     ''')

@@ -52,7 +52,7 @@ Astral is early but usable for small static sites, documentation prototypes, and
 import Astral.Config
 
 layouts do
-  default "site.astral"
+  default "site"
 end
 
 assets do
@@ -72,11 +72,15 @@ See the [Getting Started guide](https://hexdocs.pm/astral/getting-started.html) 
 assigns = assign(assigns, :title, "Home")
 ---
 
-<h1>{@title}</h1>
-<.pill :for={feature <- @features}>{feature}</.pill>
+<Layouts.site {assigns}>
+  <h1>{@title}</h1>
+  <.pill :for={feature <- @features}>{feature}</.pill>
+</Layouts.site>
 ```
 
-Local components and slots use HEEx conventions:
+Layouts are components in `layouts/`, called as `<Layouts.site>`. `.astral` pages wrap themselves in one; Markdown pages name theirs with `layout:` frontmatter or use the site default.
+
+Local components and slots use HEEx conventions. Each subdirectory of `components/` is a module, so `components/article/figure.astral` is `<Article.figure>`:
 
 ```astral
 <!-- components/card.astral -->
@@ -111,7 +115,7 @@ Define typed content collections in Elixir:
 ```elixir
 collection :posts, "content/posts" do
   permalink "/blog/:slug/"
-  layout "post.html"
+  layout "post"
 
   schema do
     field :title, :string, required: true
@@ -135,10 +139,8 @@ end
 
 Use validated data from layouts and templates:
 
-```eex
-<%= for post <- @collections.posts do %>
-  <a href={post.route_path}><%= post.data.title %></a>
-<% end %>
+```astral
+<a :for={post <- @collections.posts} href={post.route_path}>{post.data.title}</a>
 ```
 
 Collection-backed dynamic file routes let page templates own the detail page HTML:
@@ -159,7 +161,7 @@ plugin Astral.Plugin.CollectionPages,
   collection: :posts,
   pattern: "/blog/*page",
   page_size: 10,
-  layout: "blog.html"
+  layout: "blog"
 
 plugin Astral.Plugin.Feed,
   site_url: "https://example.com",
@@ -216,8 +218,8 @@ Include trusted local SVG files inline when you need definitions, masks, or hand
 
 Reference source frontend assets from layouts:
 
-```eex
-<script type="module" src="<%= Astral.asset_path(@site, "app.ts") %>"></script>
+```astral
+<script type="module" src={Astral.asset_path(@site, "app.ts")}></script>
 ```
 
 In development this points to Volt's dev server. In static builds it resolves through Volt's manifest to content-hashed output files.

@@ -183,8 +183,8 @@ before rendering documents, so the helper returns a resolved URL. Pass that URL
 to HEEx attributes, island props, or a JSON serializer; escaping belongs to the
 serializer for that context.
 
-```eex
-<script type="module" src="<%= Astral.asset_path(@site, "app.ts") %>"></script>
+```astral
+<script type="module" src={Astral.asset_path(@site, "app.ts")}></script>
 ```
 
 In development this returns a source URL served by Volt, such as `/assets/app.ts`. In static builds it reads Volt's manifest and returns the emitted output path, such as `/assets/app-5e6f7a8b.js`.

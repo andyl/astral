@@ -1,16 +1,19 @@
 defmodule Astral.Template.Namespace do
   @moduledoc """
-  Maps a components directory to compiled HEEx component modules.
+  Maps the components and layouts directories to compiled HEEx component modules.
 
-  Top-level files form the root module, which templates import, so
-  `components/pill.astral` is called as `<.pill>`. Each subdirectory becomes a
-  module that templates alias by its first segment, so
+  Top-level files under `components/` form the root module, which templates
+  import, so `components/pill.astral` is called as `<.pill>`. Each subdirectory
+  becomes a module that templates alias by its first segment, so
   `components/article/code_pane.astral` is called as `<Article.code_pane>` and
   `components/docs/api/table.astral` as `<Docs.Api.table>`.
 
-  Modules are content-addressed by the whole component set, so they compile
-  once per set of sources and every template rendered against that set shares
-  them.
+  Layouts are components in the `Layouts` module: `layouts/site.astral` is
+  called as `<Layouts.site>` and `layouts/blog/post.astral` as
+  `<Layouts.Blog.post>`.
+
+  Modules are content-addressed by the whole set of sources, so they compile
+  once per set and every template rendered against that set shares them.
   """
 
   alias Astral.Template.Source
@@ -28,14 +31,19 @@ defmodule Astral.Template.Namespace do
 
   defstruct base: nil, root: [], modules: %{}, aliases: []
 
-  @doc "Discover component sources under `dir` and name their modules."
-  @spec discover(String.t(), String.t()) :: {:ok, t()} | {:error, term()}
-  def discover(dir, root) do
-    sources = sources(dir)
-    base = base_module(root, sources)
+  @doc "Discover a site's components and layouts and name their modules."
+  @spec discover(Astral.Config.t()) :: {:ok, t()} | {:error, term()}
+  def discover(%Astral.Config{} = config) do
+    components = sources(config.components)
+    layouts = sources(config.layouts)
+    base = base_module(config.root, components ++ layouts)
 
-    with {:ok, grouped} <- group(sources, dir),
-         {:ok, aliases} <- aliases(grouped, dir) do
+    with :ok <- reject_eex_layouts(config.layouts),
+         {:ok, grouped} <- group(components, config.components),
+         :ok <- reject_layouts_directory(grouped, config.components),
+         {:ok, grouped_layouts} <- group(layouts, config.layouts),
+         grouped = Map.merge(grouped, prefix_layouts(grouped_layouts)),
+         {:ok, aliases} <- aliases(grouped, config) do
       {root_definitions, nested} = Map.pop(grouped, [], [])
 
       modules =
@@ -56,6 +64,25 @@ defmodule Astral.Template.Namespace do
   @doc "Return the module holding top-level components."
   @spec root_module(t()) :: module()
   def root_module(%__MODULE__{base: base}), do: base
+
+  @doc """
+  Find the layout component for a layout name such as `"site"` or `"blog/post"`.
+
+  A trailing `.astral` extension is ignored.
+  """
+  @spec layout(t(), String.t()) :: {:ok, module(), atom(), String.t()} | :error
+  def layout(%__MODULE__{base: base, modules: modules}, name) when is_binary(name) do
+    {dirs, [file]} =
+      name |> String.trim_trailing(@extension) |> String.split("/") |> Enum.split(-1)
+
+    module = Module.concat([base, "Layouts" | Enum.map(dirs, &Macro.camelize/1)])
+
+    modules
+    |> Map.get(module, [])
+    |> Enum.find_value(:error, fn {function, %Source{path: path}} ->
+      if Atom.to_string(function) == file, do: {:ok, module, function, path}
+    end)
+  end
 
   @doc """
   Reject setup-block aliases that would shadow a component module.
@@ -128,16 +155,32 @@ defmodule Astral.Template.Namespace do
 
   defp valid_segment?(_segment), do: false
 
-  defp aliases(grouped, dir) do
+  defp aliases(grouped, config) do
     names = Enum.sort(for {[name | _rest], _definitions} <- grouped, uniq: true, do: name)
 
     case Enum.find(names, &Code.ensure_loaded?(Module.concat([&1]))) do
-      nil ->
-        {:ok, names}
+      nil -> {:ok, names}
+      name -> {:error, {:component_directory_shadows_module, alias_dir(name, config), name}}
+    end
+  end
 
-      name ->
-        {:error,
-         {:component_directory_shadows_module, Path.join(dir, Macro.underscore(name)), name}}
+  defp alias_dir("Layouts", config), do: config.layouts
+  defp alias_dir(name, config), do: Path.join(config.components, Macro.underscore(name))
+
+  defp prefix_layouts(grouped) do
+    Map.new(grouped, fn {segments, definitions} -> {["Layouts" | segments], definitions} end)
+  end
+
+  defp reject_layouts_directory(grouped, dir) do
+    if Enum.any?(grouped, &match?({["Layouts" | _rest], _definitions}, &1)),
+      do: {:error, {:component_directory_shadows_layouts, Path.join(dir, "layouts")}},
+      else: :ok
+  end
+
+  defp reject_eex_layouts(dir) do
+    case dir |> Path.join("**/*.html") |> Path.wildcard() |> Enum.sort() do
+      [] -> :ok
+      [path | _rest] -> {:error, {:eex_layout_unsupported, path}}
     end
   end
 

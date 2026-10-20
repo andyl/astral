@@ -49,6 +49,16 @@ Use local components with HEEx syntax:
 <.pill>Elixir</.pill>
 ```
 
+Each subdirectory is a module, called with HEEx's remote component syntax. Files at the top of `components/` are imported, so they need no prefix:
+
+```text
+components/pill.astral               -> <.pill>
+components/article/figure.astral     -> <Article.figure>
+components/docs/api/table.astral     -> <Docs.Api.table>
+```
+
+Directory names use lowercase letters, digits and underscores, so `building_this_year/` becomes `BuildingThisYear`. A directory can't share its module name with an existing module, such as `map/` with `Map`. A setup block can't alias a module to the same name as a component directory either, since `alias Blog.Site` next to `components/site/` would turn `<Site.header>` into a call to `Blog.Site.header/1`; use `alias Blog.Site, as: BlogSite` instead.
+
 Component files receive the same `assigns` map as Phoenix function components, but without requiring module boilerplate. Use `assign/3`, `assigns_to_attributes/2`, `render_slot/1`, and Phoenix's built-in `<.dynamic_tag>` for wrapper components:
 
 ```astral
@@ -94,20 +104,48 @@ assigns = assign(assigns, :title, "Home")
 <.pill>Static HTML</.pill>
 ```
 
-The setup block is Elixir. It receives `assigns` and should return updated assigns when adding values.
+The setup block is Elixir, not YAML frontmatter. It receives `assigns` and should return updated assigns when adding values.
+
+`.astral` pages don't get a layout implicitly. They wrap themselves in one, the same way Phoenix templates use `<Layouts.app>`:
+
+```astral
+---
+assigns = assign(assigns, :title, "Page not found")
+---
+
+<Layouts.site {assigns}>
+  <h1>{@title}</h1>
+</Layouts.site>
+```
+
+`{assigns}` passes the page's assigns, including `:title`, to the layout. Pass attributes explicitly instead when the layout needs only a few.
 
 ## Layouts
 
-`.astral` layouts receive the same assigns as EEx layouts:
+Layouts are `.astral` components in the configured layouts directory, available to every template as the `Layouts` module. `layouts/site.astral` is `<Layouts.site>` and `layouts/blog/post.astral` is `<Layouts.Blog.post>`. A layout renders the page with `render_slot(@inner_block)`:
 
 ```astral
 <!doctype html>
 <html lang="en">
+  <head>
+    <title>{@title || "My Site"}</title>
+  </head>
   <body>
-    <main data-route={@route}>{@content}</main>
+    <main data-route={@route}>{render_slot(@inner_block)}</main>
   </body>
 </html>
 ```
+
+Layouts can wrap other layouts, so a post layout can add an `<article>` inside a shared site layout:
+
+```astral
+<!-- layouts/post.astral -->
+<Layouts.site {assigns} title={@entry.data.title}>
+  <article>{render_slot(@inner_block)}</article>
+</Layouts.site>
+```
+
+Markdown and HTML pages name their layout instead, as described in [Pages and Layouts](pages-and-layouts.md#layouts).
 
 ## HEEx syntax
 

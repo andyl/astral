@@ -16,7 +16,9 @@ defmodule Mix.Tasks.Astral.InstallTest do
     end)
     |> assert_creates("pages/index.md", &assert(&1 =~ "# Welcome to Star Chart"))
     |> assert_creates("pages/about.md", &assert(&1 =~ "# About Star Chart"))
-    |> assert_creates("layouts/default.html", fn content ->
+    |> assert_creates("layouts/default.astral", fn content ->
+      assert content =~ ~s|{@title \|\| "Star Chart"}|
+      assert content =~ "{render_slot(@inner_block)}"
       assert content =~ "Astral.asset_path(@site, \"app.ts\")"
       assert content =~ ~s(<a class="brand" href="/">Star Chart</a>)
     end)

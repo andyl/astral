@@ -8,16 +8,14 @@ defmodule Astral.Plugin.CollectionPagesTest do
   setup %{tmp_dir: tmp_dir} do
     write(tmp_dir, "pages/index.html", "<h1>Home</h1>")
 
-    write(tmp_dir, "layouts/blog.html", """
-    <h1>Blog page <%= @page.page_number %></h1>
+    write(tmp_dir, "layouts/blog.astral", """
+    <h1>Blog page {@page.page_number}</h1>
     <ul>
-    <%= for entry <- @page.entries do %>
-      <li><a href="<%= entry.route_path %>"><%= entry.data.title %></a></li>
-    <% end %>
+      <li :for={entry <- @page.entries}><a href={entry.route_path}>{entry.data.title}</a></li>
     </ul>
-    <%= if @page.urls.previous do %><a href="<%= @page.urls.previous %>">Previous</a><% end %>
-    <%= if @page.urls.next do %><a href="<%= @page.urls.next %>">Next</a><% end %>
-    <span><%= @collection %></span>
+    <a :if={@page.urls.previous} href={@page.urls.previous}>Previous</a>
+    <a :if={@page.urls.next} href={@page.urls.next}>Next</a>
+    <span>{@collection}</span>
     """)
 
     for {slug, day} <- [{"one", 1}, {"two", 2}, {"three", 3}] do
@@ -40,7 +38,7 @@ defmodule Astral.Plugin.CollectionPagesTest do
         root: root,
         plugins: [
           {Astral.Plugin.CollectionPages,
-           collection: :posts, pattern: "/blog/*page", page_size: 2, layout: "blog.html"}
+           collection: :posts, pattern: "/blog/*page", page_size: 2, layout: "blog"}
         ],
         collections: [
           [

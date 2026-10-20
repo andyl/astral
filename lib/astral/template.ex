@@ -6,7 +6,8 @@ defmodule Astral.Template do
   setup block delimited by `---`, followed by HEEx markup. Component files under
   the configured components directory become HEEx function components:
   `components/formatted_date.astral` is called as `<.formatted_date />` and
-  `components/article/figure.astral` as `<Article.figure />`. See
+  `components/article/figure.astral` as `<Article.figure />`. Layouts are
+  components too: `layouts/site.astral` is called as `<Layouts.site>`. See
   `Astral.Template.Namespace`.
   """
 
@@ -50,6 +51,39 @@ defmodule Astral.Template do
     end
   end
 
+  @doc """
+  Render HTML inside a layout component from the layouts directory.
+
+  The layout receives `assigns` as attributes and `content` as its inner block,
+  which it renders with `render_slot(@inner_block)`. Returns
+  `{:error, :missing_layout}` when no layout has that name.
+  """
+  @spec render_layout(String.t(), String.t(), map() | keyword(), Astral.Config.t()) ::
+          {:ok, String.t()} | {:error, term()}
+  def render_layout(name, content, assigns, %Astral.Config{} = config) do
+    with {:ok, namespace} <- Namespace.discover(config),
+         :ok <- compile_namespace(namespace),
+         {:ok, module, function, path} <- find_layout(namespace, name) do
+      slot = %{
+        __slot__: :inner_block,
+        inner_block: fn _changed, _arg -> Phoenix.HTML.raw(content) end
+      }
+
+      assigns = assigns |> assigns_map() |> Map.put(:inner_block, [slot])
+
+      html =
+        Astral.Template.Context.with_source(path, fn ->
+          rendered_to_html(apply(module, function, [assigns]))
+        end)
+
+      {:ok, html}
+    end
+  end
+
+  defp find_layout(namespace, name) do
+    with :error <- Namespace.layout(namespace, name), do: {:error, :missing_layout}
+  end
+
   @doc "Evaluate a `.astral` setup block and return its Elixir binding."
   @spec setup_binding_file(String.t(), map() | keyword(), Astral.Config.t()) ::
           {:ok, keyword()} | {:error, term()}
@@ -64,7 +98,7 @@ defmodule Astral.Template do
   defdelegate current_source(), to: Astral.Template.Context
 
   defp render_source(%Source{} = source, function, assigns, config) do
-    with {:ok, namespace} <- Namespace.discover(config.components, config.root),
+    with {:ok, namespace} <- Namespace.discover(config),
          :ok <- compile_namespace(namespace),
          module = module_name(config, function, namespace, source),
          {:ok, quoted} <- module_ast(module, namespace, [{function, source}]),
