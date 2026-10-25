@@ -118,11 +118,13 @@ defmodule Astral.MixProject do
       examples/basic/components/base_head.astral
       examples/basic/components/formatted_date.astral
       examples/basic/components/pill.astral
+      examples/basic/components/site/footer.astral
+      examples/basic/components/site/header.astral
       examples/basic/content/posts/hello-astral.md
-      examples/basic/layouts/astral.astral
-      examples/basic/layouts/default.html
-      examples/basic/layouts/marketing.html
-      examples/basic/layouts/post.html
+      examples/basic/layouts/base.astral
+      examples/basic/layouts/default.astral
+      examples/basic/layouts/marketing.astral
+      examples/basic/layouts/post.astral
       examples/basic/mix.exs
       examples/basic/package-lock.json
       examples/basic/package.json
