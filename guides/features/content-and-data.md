@@ -17,7 +17,7 @@ Use YAML frontmatter for page metadata and route options:
 ```md
 ---
 title: About
-layout: default.html
+layout: default
 permalink: /about-us/
 ---
 
@@ -158,7 +158,7 @@ Define local Markdown collections in `astral.config.exs`:
 ```elixir
 collection :posts, "content/posts" do
   permalink "/blog/:slug/"
-  layout "post.html"
+  layout "post"
 
   schema do
     field :title, :string, required: true

@@ -286,7 +286,7 @@ defmodule Astral.Config do
       asset_outdir: path(opts, :asset_outdir, outdir, "assets"),
       asset_url_prefix: Keyword.get(opts, :asset_url_prefix, "/assets"),
       asset_hash: Keyword.get(opts, :asset_hash, true),
-      layout: Keyword.get(opts, :layout, "default.html"),
+      layout: Keyword.get(opts, :layout, "default"),
       markdown: Keyword.get(opts, :markdown, []),
       image: nil,
       islands: islands_config(opts),

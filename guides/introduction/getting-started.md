@@ -25,7 +25,7 @@ Or add Astral and Igniter manually:
 ```elixir
 def deps do
   [
-    {:astral, "~> 0.7"},
+    {:astral, "~> 0.8"},
     {:igniter, "~> 0.8", only: [:dev, :test]}
   ]
 end
@@ -73,7 +73,7 @@ astral.config.exs
 pages/
   index.md
 layouts/
-  default.html
+  default.astral
 assets/
   app.ts
   styles.css
@@ -94,7 +94,7 @@ root "."
 outdir "dist"
 
 layouts do
-  default "default.html"
+  default "default"
 end
 
 assets do

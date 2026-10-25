@@ -9,7 +9,7 @@ Markdown pages use MDEx and YAML frontmatter:
 ```markdown
 ---
 title: About
-layout: default.html
+layout: default
 ---
 
 # About
@@ -46,7 +46,7 @@ Markdown pages and collection entries can use local `.astral` components through
 </.callout>
 ```
 
-Components are discovered from the configured `components/` directory, the same as `.astral` pages and layouts. Use HEEx local component syntax (`<.name>`) rather than MDX imports.
+Components are discovered from the configured `components/` directory, the same as `.astral` pages and layouts. Use HEEx component syntax (`<.name>`, or `<Article.figure>` for `components/article/figure.astral`) rather than MDX imports.
 
 Assigns are available in Markdown with HEEx expression syntax. `@entry` is present for collection entry pages, and `@entry.data` contains schema-declared fields:
 
@@ -95,33 +95,38 @@ Dynamic page templates render once for each collection entry whose route matches
 <p>Slug: {@params.slug}</p>
 ```
 
-```eex
-<p>Path: <%= @params.path %></p>
+```md
+<p>Path: {@params.path}</p>
 ```
 
 A dynamic file route overrides the default collection entry page for the same route, letting the page template own the final HTML.
 
 ## Layouts
 
-Layouts live in the configured layouts directory. EEx layouts use `@content` where the page HTML should be inserted:
+Layouts are `.astral` components in the configured layouts directory. A layout renders the page with `render_slot(@inner_block)`:
 
-```html
+```astral
+<!-- layouts/default.astral -->
 <!doctype html>
 <html lang="en">
   <head>
-    <title><%= @page.title || "My Site" %></title>
+    <title>{@title || "My Site"}</title>
   </head>
   <body>
-    <main data-route="<%= @route %>">
-      <%= @content %>
+    <main data-route={@route}>
+      {render_slot(@inner_block)}
     </main>
   </body>
 </html>
 ```
 
-Common assigns:
+Markdown and HTML pages are wrapped in a layout. They use the layout named by their frontmatter `layout`, then their collection's `layout`, then the site default from `astral.config.exs`. Names are paths in the layouts directory without the extension, such as `default` or `blog/post`. `layout: false` renders without one. A named layout that doesn't exist is an error; a missing site default renders the page without a layout.
 
-- `@content` — rendered page HTML.
+`.astral` pages wrap themselves instead, as `<Layouts.default {assigns}>...</Layouts.default>`. See [Astral templates](astral-templates.md#layouts).
+
+Layouts receive these assigns from Markdown and HTML pages, and from `.astral` pages that pass `{assigns}`:
+
+- `@title` — the frontmatter title, or a title the page assigned, otherwise `nil`.
 - `@page` — current `%Astral.Content{}`.
 - `@metadata` — decoded frontmatter map.
 - `@route` — route path such as `/about/`.
@@ -155,12 +160,12 @@ assigns =
 <meta property="og:description" content={@description} />
 ```
 
-Then call it from a `.astral` layout:
+Then call it from a layout:
 
 ```astral
 <head>
   <.base_head
-    title={@page.title || "My Site"}
+    title={@title || "My Site"}
     description={@metadata["description"]}
     route={@route}
     site_url="https://example.com"

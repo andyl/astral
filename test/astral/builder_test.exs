@@ -121,7 +121,7 @@ defmodule Astral.BuilderTest do
     write("pages/index.html", "<h1>Home</h1>")
     write("pages/about.html", "<h1>About</h1>")
     write("pages/blog/post.html", "<h1>Post</h1>")
-    write("layouts/default.html", "<html><body><%= @content %></body></html>")
+    write("layouts/default.astral", "<html><body>{render_slot(@inner_block)}</body></html>")
 
     assert {:ok, result} = Astral.build(root: tmp())
 
@@ -152,7 +152,7 @@ defmodule Astral.BuilderTest do
   test "builds Markdown pages through MDEx" do
     write("pages/index.md", "# Home")
     write("pages/about.md", "# About")
-    write("layouts/default.html", "<main><%= @content %></main>")
+    write("layouts/default.astral", "<main>{render_slot(@inner_block)}</main>")
 
     assert {:ok, result} = Astral.build(root: tmp())
 
@@ -164,7 +164,7 @@ defmodule Astral.BuilderTest do
   test "writes root 404 pages to 404.html" do
     write("pages/index.md", "# Home")
     write("pages/404.md", "# Not Found")
-    write("layouts/default.html", "<main><%= @content %></main>")
+    write("layouts/default.astral", "<main>{render_slot(@inner_block)}</main>")
 
     assert {:ok, result} = Astral.build(root: tmp())
 
@@ -192,7 +192,7 @@ defmodule Astral.BuilderTest do
     <.pill>Elixir</.pill>
     ''')
 
-    write("layouts/default.html", "<main><%= @content %></main>")
+    write("layouts/default.astral", "<main>{render_slot(@inner_block)}</main>")
 
     assert {:ok, result} = Astral.build(root: tmp())
 
@@ -529,7 +529,7 @@ defmodule Astral.BuilderTest do
     assert [_] = Path.wildcard(Path.join(tmp(), "dist/assets/card-100x50-*.png"))
   end
 
-  test "builds HEEx-first Astral pages with local components" do
+  test "builds HEEx-first Astral pages that wrap themselves in layouts" do
     write("components/pill.astral", ~S'''
     <div class="pill">
       {render_slot(@inner_block)}
@@ -540,19 +540,23 @@ defmodule Astral.BuilderTest do
     ---
     assigns = assign(assigns, :title, "Home")
     ---
-    <h1>{@title}</h1>
-    <.pill>Elixir</.pill>
+    <Layouts.default title={@title} route={@route}>
+      <h1>{@title}</h1>
+      <.pill>Elixir</.pill>
+    </Layouts.default>
     ''')
 
     write("layouts/default.astral", ~S'''
+    <title>{@title}</title>
     <main data-route={@route}>
-      {@content}
+      {render_slot(@inner_block)}
     </main>
     ''')
 
-    assert {:ok, result} = Astral.build(root: tmp(), layout: "default.astral")
+    assert {:ok, result} = Astral.build(root: tmp())
 
     assert Enum.map(result.site.pages, & &1.route_path) == ["/"]
+    assert read("dist/index.html") =~ "<title>Home</title>"
     assert read("dist/index.html") =~ ~s(<main data-route="/">)
     assert read("dist/index.html") =~ "<h1>Home</h1>"
     assert read("dist/index.html") =~ ~s(<div class="pill">)
@@ -570,7 +574,7 @@ defmodule Astral.BuilderTest do
     <.svg src="icons/clip-paths.svg" class="sr-only" data-role="defs" />
     ''')
 
-    write("layouts/default.html", "<main><%= @content %></main>")
+    write("layouts/default.astral", "<main>{render_slot(@inner_block)}</main>")
 
     assert {:ok, _result} = Astral.build(root: tmp())
 
@@ -589,7 +593,7 @@ defmodule Astral.BuilderTest do
     <.svg src="../../assets/icons/local.svg" />
     ''')
 
-    write("layouts/default.html", "<main><%= @content %></main>")
+    write("layouts/default.astral", "<main>{render_slot(@inner_block)}</main>")
 
     assert {:ok, _result} = Astral.build(root: tmp())
 
@@ -616,7 +620,7 @@ defmodule Astral.BuilderTest do
     <.svg src="@/icons/logo.svg" aria-hidden="true" />
     ''')
 
-    write("layouts/default.html", "<main><%= @content %></main>")
+    write("layouts/default.astral", "<main>{render_slot(@inner_block)}</main>")
 
     assert {:ok, _result} = Astral.build(root: tmp())
 
@@ -653,19 +657,19 @@ defmodule Astral.BuilderTest do
     ---
     title: About Astral
     permalink: /about-us/
-    layout: page.html
+    layout: page
     ---
     # About
     """)
 
-    write("layouts/page.html", "<%= @content %>")
+    write("layouts/page.astral", "{render_slot(@inner_block)}")
 
     assert {:ok, result} = Astral.build(root: tmp())
 
     [page] = result.site.pages
     assert page.route_path == "/about-us/"
     assert page.content.title == "About Astral"
-    assert page.content.layout == "page.html"
+    assert page.content.layout == "page"
     assert page.content.metadata["title"] == "About Astral"
   end
 
@@ -673,13 +677,13 @@ defmodule Astral.BuilderTest do
     write("pages/index.md", """
     ---
     title: Home
-    layout: page.html
+    layout: page
     ---
     # Home
     """)
 
-    write("layouts/default.html", "<default><%= @content %></default>")
-    write("layouts/page.html", "<page><%= @page.title %>:<%= @content %></page>")
+    write("layouts/default.astral", "<default>{render_slot(@inner_block)}</default>")
+    write("layouts/page.astral", "<page>{@page.title}:{render_slot(@inner_block)}</page>")
 
     assert {:ok, _result} = Astral.build(root: tmp())
 
@@ -694,7 +698,7 @@ defmodule Astral.BuilderTest do
     # Home
     """)
 
-    write("layouts/default.html", "<default><%= @content %></default>")
+    write("layouts/default.astral", "<default>{render_slot(@inner_block)}</default>")
 
     assert {:ok, _result} = Astral.build(root: tmp())
 
@@ -704,12 +708,12 @@ defmodule Astral.BuilderTest do
   test "returns an error for missing frontmatter layout" do
     write("pages/index.md", """
     ---
-    layout: missing.html
+    layout: missing
     ---
     # Home
     """)
 
-    assert {:error, {:missing_layout, path, "missing.html"}} = Astral.build(root: tmp())
+    assert {:error, {:missing_layout, path, "missing"}} = Astral.build(root: tmp())
     assert path == Path.join(tmp(), "pages/index.md")
   end
 
@@ -722,10 +726,10 @@ defmodule Astral.BuilderTest do
     # Home
     """)
 
-    write("layouts/default.html", """
-    <title><%= @page.title %></title>
-    <meta name="description" content="<%= @metadata["description"] %>">
-    <main data-route="<%= @route %>" data-assets="<%= @site.config.asset_url_prefix %>"><%= @content %></main>
+    write("layouts/default.astral", """
+    <title>{@page.title}</title>
+    <meta name="description" content={@metadata["description"]}>
+    <main data-route={@route} data-assets={@site.config.asset_url_prefix}>{render_slot(@inner_block)}</main>
     """)
 
     assert {:ok, _result} = Astral.build(root: tmp())
@@ -733,7 +737,7 @@ defmodule Astral.BuilderTest do
     assert read("dist/index.html") == """
            <title>Home Page</title>
            <meta name="description" content="Welcome">
-           <main data-route="/" data-assets="/assets">#{heading("Home", "home")}</main>
+           <main data-route="/" data-assets="/assets">#{heading("Home", "home")}</main>\
            """
   end
 
@@ -749,7 +753,7 @@ defmodule Astral.BuilderTest do
   test "pages override public files with the same output path" do
     write("pages/404.md", "# Page 404")
     write("public/404.html", "Public 404")
-    write("layouts/default.html", "<main><%= @content %></main>")
+    write("layouts/default.astral", "<main>{render_slot(@inner_block)}</main>")
 
     assert {:ok, _result} = Astral.build(root: tmp())
 
@@ -806,13 +810,13 @@ defmodule Astral.BuilderTest do
 
   test "runs plugin hooks during static builds" do
     write("pages/index.html", "<h1>Home</h1>")
-    write("layouts/plugin.html", "<main><%= @content %></main>")
+    write("layouts/plugin.astral", "<main>{render_slot(@inner_block)}</main>")
 
     assert {:ok, result} =
              Astral.build(
                root: tmp(),
                plugins: [
-                 {ConfigPlugin, layout: "plugin.html"},
+                 {ConfigPlugin, layout: "plugin"},
                  SitePlugin,
                  {RenderPlugin, suffix: "done"}
                ]
@@ -985,7 +989,11 @@ defmodule Astral.BuilderTest do
 
   test "renders glob dynamic Markdown routes with params in layouts" do
     write("pages/docs/[...path].md", "# Dynamic Doc")
-    write("layouts/doc.html", ~S(<%= @params.path %>:<%= @entry.data.title %>:<%= @content %>))
+
+    write(
+      "layouts/doc.astral",
+      ~S"{@params.path}:{@entry.data.title}:{render_slot(@inner_block)}"
+    )
 
     write("content/docs/guide/intro.md", """
     ---
@@ -998,7 +1006,7 @@ defmodule Astral.BuilderTest do
     config =
       Astral.Config.new(
         root: tmp(),
-        layout: "doc.html",
+        layout: "doc",
         collections: [
           [
             name: :docs,
@@ -1062,8 +1070,8 @@ defmodule Astral.BuilderTest do
     write("pages/index.html", "")
 
     write(
-      "layouts/default.html",
-      "<%= inspect(@collections.posts |> Enum.map(& &1.data.title)) %>"
+      "layouts/default.astral",
+      "{inspect(@collections.posts |> Enum.map(& &1.data.title))}"
     )
 
     write("content/posts/hello.md", """
@@ -1099,8 +1107,8 @@ defmodule Astral.BuilderTest do
     assert entry.slug == "hello"
     assert entry.route_path == "/blog/hello/"
     assert entry.data == %{title: "Hello", tags: ["elixir"]}
-    assert read("dist/index.html") == ~s(["Hello"])
-    assert read("dist/blog/hello/index.html") == ~s(["Hello"])
+    assert read("dist/index.html") == ~s([&quot;Hello&quot;])
+    assert read("dist/blog/hello/index.html") == ~s([&quot;Hello&quot;])
   end
 
   test "renders plugin generated routes" do

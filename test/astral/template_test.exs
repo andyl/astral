@@ -130,6 +130,85 @@ defmodule Astral.TemplateTest do
     assert html =~ "Elixir"
   end
 
+  test "renders component directories as aliased modules" do
+    write("components/pill.astral", ~S|<span class="pill"><Article.meta label={@label} /></span>|)
+    write("components/article/meta.astral", ~S|<em>{@label}</em>|)
+
+    write("components/article/figure.astral", """
+    <figure><.pill label="root" />{render_slot(@inner_block)}</figure>
+    """)
+
+    write("components/docs/api/table.astral", ~S|<table data-name={@name}></table>|)
+
+    write("page.astral", """
+    <Article.figure>Caption</Article.figure>
+    <Docs.Api.table name="config" />
+    """)
+
+    config = Astral.Config.new(root: tmp(), pages: ".")
+
+    assert {:ok, html} = Astral.Template.render_file(path("page.astral"), %{}, config)
+    assert html =~ ~s(<figure><span class="pill"><em>root</em></span>Caption</figure>)
+    assert html =~ ~s(<table data-name="config"></table>)
+  end
+
+  test "renders component directory modules from Markdown" do
+    write("components/article/callout.astral", """
+    <aside>{render_slot(@inner_block)}</aside>
+    """)
+
+    write("page.md", """
+    # Notes
+
+    A *short* <Article.callout>note</Article.callout> inline.
+    """)
+
+    config = Astral.Config.new(root: tmp(), pages: ".")
+
+    assert {:ok, html} = Astral.Template.render_markdown_file(path("page.md"), %{}, config)
+    assert html =~ "<em>short</em> <aside>note</aside> inline"
+  end
+
+  test "rejects setup aliases that shadow a component directory" do
+    write("components/site/shell.astral", "<div></div>")
+
+    write("page.astral", """
+    ---
+    alias Some.Site
+    ---
+    <Site.shell />
+    """)
+
+    config = Astral.Config.new(root: tmp(), pages: ".")
+
+    assert {:error, {:component_alias_shadowed, _path, "Site"}} =
+             Astral.Template.render_file(path("page.astral"), %{}, config)
+  end
+
+  test "rejects component directories that shadow existing modules" do
+    write("components/map/row.astral", "<div></div>")
+    write("page.astral", "<p></p>")
+
+    config = Astral.Config.new(root: tmp(), pages: ".")
+
+    assert {:error, {:component_directory_shadows_module, _dir, "Map"}} =
+             Astral.Template.render_file(path("page.astral"), %{}, config)
+  end
+
+  test "compiles component modules once per component set" do
+    write("components/article/meta.astral", "<em>meta</em>")
+    write("one.astral", "<Article.meta />")
+    write("two.astral", "<Article.meta />")
+
+    config = Astral.Config.new(root: tmp(), pages: ".")
+
+    assert {:ok, "<em>meta</em>"} = Astral.Template.render_file(path("one.astral"), %{}, config)
+    loaded = compiled_component_modules()
+
+    assert {:ok, "<em>meta</em>"} = Astral.Template.render_file(path("two.astral"), %{}, config)
+    assert compiled_component_modules() == loaded
+  end
+
   test "extracts browser asset blocks with HEEx parser metadata" do
     source = """
     <.card>
@@ -315,6 +394,13 @@ defmodule Astral.TemplateTest do
     :code.all_loaded()
     |> Enum.map(&elem(&1, 0))
     |> Enum.filter(&String.starts_with?(Atom.to_string(&1), "Elixir.Astral.Compiled.Template.T"))
+    |> MapSet.new()
+  end
+
+  defp compiled_component_modules do
+    :code.all_loaded()
+    |> Enum.map(&elem(&1, 0))
+    |> Enum.filter(&String.starts_with?(Atom.to_string(&1), "Elixir.Astral.Compiled.Components."))
     |> MapSet.new()
   end
 

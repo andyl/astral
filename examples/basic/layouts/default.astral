@@ -1,0 +1,18 @@
+<Layouts.base {assigns}>
+  <Site.header />
+
+  <main class="page" data-route={@route}>
+    {render_slot(@inner_block)}
+
+    <section :if={@route == "/"} class="post-list" aria-labelledby="posts-heading">
+      <h2 id="posts-heading">Posts collection</h2>
+      <article :for={post <- Map.get(@collections, :posts, [])}>
+        <h3><a href={post.route_path}>{post.data.title}</a></h3>
+        <p>{post.data.description}</p>
+        <small><.formatted_date date={post.data.date} /></small>
+      </article>
+    </section>
+  </main>
+
+  <Site.footer />
+</Layouts.base>

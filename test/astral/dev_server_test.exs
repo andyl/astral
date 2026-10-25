@@ -48,9 +48,9 @@ defmodule Astral.DevServerTest do
     write("pages/index.md", "# Home")
     write("pages/about.md", "# About")
 
-    write("layouts/default.html", """
+    write("layouts/default.astral", """
     <!doctype html>
-    <html><body><main><%= @content %></main></body></html>
+    <html><body><main>{render_slot(@inner_block)}</main></body></html>
     """)
 
     :ok
@@ -273,7 +273,7 @@ defmodule Astral.DevServerTest do
   test "renders development error pages" do
     write("pages/broken.md", """
     ---
-    layout: missing.html
+    layout: missing
     ---
 
     # Broken
@@ -327,7 +327,7 @@ defmodule Astral.DevServerTest do
 
   test "serves custom 404 pages with 404 status" do
     write("pages/404.md", "# Not Found")
-    write("layouts/default.html", "<main><%= @content %></main>")
+    write("layouts/default.astral", "<main>{render_slot(@inner_block)}</main>")
 
     conn = call_dev_server("/404")
 

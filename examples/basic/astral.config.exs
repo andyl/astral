@@ -19,7 +19,7 @@ get "/posts.txt", content_type: "text/plain" do
 end
 
 layouts do
-  default "astral.astral"
+  default "default"
 end
 
 assets do
@@ -30,7 +30,6 @@ end
 
 collection :posts, "content/posts" do
   permalink "/blog/:slug/"
-  layout "post.html"
 
   schema do
     field :title, :string, required: true

@@ -2,41 +2,43 @@
 assigns = assign(assigns, :features, ["HEEx expressions", "local components", "Phoenix slots"])
 ---
 
-<section class="post">
-  <p class="eyebrow">HEEx-first .astral page</p>
-  <h1>Components without module boilerplate</h1>
+<Layouts.default {assigns}>
+  <section class="post">
+    <p class="eyebrow">HEEx-first .astral page</p>
+    <h1>Components without module boilerplate</h1>
 
-  <p>
-    Astral templates use Phoenix HEEx semantics while still building a static site.
-  </p>
+    <p>
+      Astral templates use Phoenix HEEx semantics while still building a static site.
+    </p>
 
-  <.picture
-    src="images/astral-mark.svg"
-    alt="Astral gradient mark"
-    widths={[160, 320]}
-    formats={[:webp]}
-    fallback_format={:png}
-    sizes="(max-width: 640px) 160px, 320px"
-    class="hero-image"
-  />
+    <.picture
+      src="images/astral-mark.svg"
+      alt="Astral gradient mark"
+      widths={[160, 320]}
+      formats={[:webp]}
+      fallback_format={:png}
+      sizes="(max-width: 640px) 160px, 320px"
+      class="hero-image"
+    />
 
-  <p>
-    <.pill :for={feature <- @features}>{feature}</.pill>
-  </p>
+    <p>
+      <.pill :for={feature <- @features}>{feature}</.pill>
+    </p>
 
-  <div class="island-grid">
-    <.vue
-      component="islands/Gallery.vue"
-      client={:visible}
-      props={%{title: "Interactive gallery", images: ["Astral", "Volt", "XM"]}}
-    >
-      <p class="eyebrow">Static HEEx children are passed to the Vue default slot.</p>
-    </.vue>
+    <div class="island-grid">
+      <.vue
+        component="islands/Gallery.vue"
+        client={:visible}
+        props={%{title: "Interactive gallery", images: ["Astral", "Volt", "XM"]}}
+      >
+        <p class="eyebrow">Static HEEx children are passed to the Vue default slot.</p>
+      </.vue>
 
-    <.react component="islands/ReactCounter.jsx" client={:media} media="(min-width: 640px)" props={%{initial: 2}} />
-  </div>
+      <.react component="islands/ReactCounter.jsx" client={:media} media="(min-width: 640px)" props={%{initial: 2}} />
+    </div>
 
-  <p>
-    <a class="button" href="/">Back home</a>
-  </p>
-</section>
+    <p>
+      <a class="button" href="/">Back home</a>
+    </p>
+  </section>
+</Layouts.default>

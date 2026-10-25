@@ -4,4 +4,4 @@ title: Welcome to <%= @project_name %>
 
 # Welcome to <%= @project_name %>
 
-This page is rendered from Markdown with MDEx and wrapped in an EEx layout.
+This page is rendered from Markdown with MDEx and wrapped in the `default` layout from `layouts/default.astral`.

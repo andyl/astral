@@ -14,7 +14,7 @@ if Code.ensure_loaded?(Igniter) do
         mix igniter.install astral
         mix astral.install
 
-    The installer creates Astral config, starter pages, EEx layouts, TypeScript
+    The installer creates Astral config, starter pages, a layout component, TypeScript
     assets, public files, TypeScript configuration, and Volt formatter/linter
     configuration.
     """
@@ -274,7 +274,7 @@ if Code.ensure_loaded?(Igniter) do
     end
 
     defp site_files do
-      ~w[astral.config.exs pages/index.md pages/about.md layouts/default.html
+      ~w[astral.config.exs pages/index.md pages/about.md layouts/default.astral
          assets/app.ts assets/styles.css public/robots.txt tsconfig.json]
     end
 

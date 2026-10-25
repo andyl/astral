@@ -8,7 +8,7 @@ This example shows the first Astral milestone working together:
 
 - MDEx Markdown rendering
 - YAML frontmatter
-- EEx layouts
+- layout components
 - per-page layout selection
 - public static files
 - Volt-powered JavaScript and CSS

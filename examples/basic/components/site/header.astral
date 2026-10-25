@@ -1,0 +1,9 @@
+<header class="site-header">
+  <a class="brand" href="/">Astral Basic</a>
+  <nav aria-label="Main navigation">
+    <a href="/about/">About</a>
+    <a href="/blog/hello-astral/">Blog</a>
+    <a href="/components/">Components</a>
+    <a href="/landing/">Landing</a>
+  </nav>
+</header>

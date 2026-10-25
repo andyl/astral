@@ -8,13 +8,15 @@ paths =
   end
 ---
 
-<section class="tag-page" data-tag={@params.tag}>
-  <p class="eyebrow">Tag</p>
-  <h1>{@params.tag}</h1>
+<Layouts.default {assigns}>
+  <section class="tag-page" data-tag={@params.tag}>
+    <p class="eyebrow">Tag</p>
+    <h1>{@params.tag}</h1>
 
-  <ul>
-    <li :for={post <- @posts}>
-      <a href={post.route_path}>{post.data.title}</a>
-    </li>
-  </ul>
-</section>
+    <ul>
+      <li :for={post <- @posts}>
+        <a href={post.route_path}>{post.data.title}</a>
+      </li>
+    </ul>
+  </section>
+</Layouts.default>

@@ -1,0 +1,6 @@
+<Layouts.base {assigns} title={@title || "Astral Landing"} body_class="marketing">
+  <main class="hero">
+    {render_slot(@inner_block)}
+    <p><a class="button" href="/">Back to the example home</a></p>
+  </main>
+</Layouts.base>

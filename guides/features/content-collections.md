@@ -7,7 +7,7 @@ Collections group Markdown entries such as posts, docs, changelog items, or auth
 ```elixir
 collection :posts, "content/posts" do
   permalink "/blog/:slug/"
-  layout "post.html"
+  layout "post"
 
   schema do
     field :title, :string, required: true
@@ -68,10 +68,8 @@ Use image fields directly with Astral image components:
 
 `entry.metadata` contains original string-keyed frontmatter. `entry.data` contains schema-normalized values:
 
-```eex
-<%= for post <- @collections.posts do %>
-  <a href={post.route_path}><%= post.data.title %></a>
-<% end %>
+```astral
+<a :for={post <- @collections.posts} href={post.route_path}>{post.data.title}</a>
 ```
 
 Collection entry layouts receive `@entry` for the current entry.

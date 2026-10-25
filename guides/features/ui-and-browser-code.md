@@ -20,8 +20,8 @@ import "./styles.css";
 
 Reference the asset entry from a layout:
 
-```eex
-<script type="module" src="<%= Astral.asset_path(@site, "app.ts") %>"></script>
+```astral
+<script type="module" src={Astral.asset_path(@site, "app.ts")}></script>
 ```
 
 You can also place a `<style>` block directly in a `.astral` page, layout, or component:

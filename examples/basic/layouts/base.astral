@@ -1,0 +1,21 @@
+---
+assigns =
+  assigns
+  |> assign_new(:description, fn -> assigns[:metadata]["description"] end)
+  |> assign_new(:body_class, fn -> nil end)
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <.base_head
+      title={@title}
+      description={@description}
+      route={@route}
+      site_url="https://example.com"
+    />
+    <script type="module" src={Astral.asset_path(@site, "app.ts")}></script>
+  </head>
+  <body {if @body_class, do: [class: @body_class], else: []}>
+    {render_slot(@inner_block)}
+  </body>
+</html>

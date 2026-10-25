@@ -141,7 +141,7 @@ defmodule Astral.Islands.IntegrationTest do
 
   test "delayed nested instances reuse an entry without suppressing layout CSS or mounting twice" do
     Astral.Islands.SiteFixtures.write_delayed_shared_island_site!(tmp())
-    assert {:ok, _} = Astral.build(root: tmp(), layout: "site.astral", asset_hash: false)
+    assert {:ok, _} = Astral.build(root: tmp(), asset_hash: false)
     html = File.read!(Path.join(tmp(), "dist/index.html"))
     assert html =~ "<!DOCTYPE html>"
     tree = Floki.parse_document!(html)

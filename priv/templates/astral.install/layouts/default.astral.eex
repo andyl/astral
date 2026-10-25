@@ -3,8 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title><%%= @page.title || <%= inspect(@project_name) %> %></title>
-    <script type="module" src="<%%= Astral.asset_path(@site, "app.ts") %>"></script>
+    <title>{@title || <%= inspect(@project_name) %>}</title>
+    <script type="module" src={Astral.asset_path(@site, "app.ts")}>
+    </script>
   </head>
   <body>
     <header class="site-header">
@@ -14,8 +15,8 @@
       </nav>
     </header>
 
-    <main class="page" data-route="<%%= @route %>">
-      <%%= @content %>
+    <main class="page" data-route={@route}>
+      {render_slot(@inner_block)}
     </main>
   </body>
 </html>

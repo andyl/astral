@@ -119,7 +119,7 @@ plugin Astral.Plugin.CollectionPages,
   collection: :posts,
   pattern: "/blog/*page",
   page_size: 10,
-  layout: "blog.html"
+  layout: "blog"
 ```
 
 The `*page` route parameter omits page one:
@@ -130,25 +130,19 @@ The `*page` route parameter omits page one:
 /blog/3/
 ```
 
-The pagination layout receives `@page`, `@collection`, `@site`, `@collections`, `@routes`, and `@route`. Declare a collection schema for any fields you read through `entry.data`, such as `entry.data.title` below.
+The pagination layout is a layout component that receives `@page`, `@collection`, `@site`, `@collections`, `@routes`, and `@route`. The plugin renders no page content of its own, so the layout usually produces the whole listing; it can wrap itself in another layout, such as `<Layouts.default {assigns}>`. Declare a collection schema for any fields you read through `entry.data`, such as `entry.data.title` below.
 
-```eex
+```astral
+<!-- layouts/blog.astral -->
 <h1>Blog</h1>
 
-<%= for entry <- @page.entries do %>
-  <article>
-    <h2><a href="<%= entry.route_path %>"><%= entry.data.title %></a></h2>
-  </article>
-<% end %>
+<article :for={entry <- @page.entries}>
+  <h2><a href={entry.route_path}>{entry.data.title}</a></h2>
+</article>
 
 <nav>
-  <%= if @page.urls.previous do %>
-    <a href="<%= @page.urls.previous %>">Previous</a>
-  <% end %>
-
-  <%= if @page.urls.next do %>
-    <a href="<%= @page.urls.next %>">Next</a>
-  <% end %>
+  <a :if={@page.urls.previous} href={@page.urls.previous}>Previous</a>
+  <a :if={@page.urls.next} href={@page.urls.next}>Next</a>
 </nav>
 ```
 

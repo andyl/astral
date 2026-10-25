@@ -20,4 +20,26 @@ defmodule Astral.Page do
             entry: nil,
             params: %{},
             assigns: %{}
+
+  @doc """
+  Return the assigns a page and its layout render with.
+
+  `:title` is the page's frontmatter title, or `nil`, so layouts can read
+  `@title` whether a Markdown page or an `.astral` page renders them.
+  """
+  @spec assigns(t(), Astral.Site.t()) :: map()
+  def assigns(%__MODULE__{} = page, site) do
+    %{
+      title: page.content.title,
+      page: page.content,
+      metadata: page.content.metadata,
+      route: page.route_path,
+      params: page.params,
+      site: site,
+      collections: site.entries,
+      entry: page.entry,
+      routes: site.routes
+    }
+    |> Map.merge(page.assigns)
+  end
 end

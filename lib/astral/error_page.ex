@@ -68,14 +68,31 @@ defmodule Astral.ErrorPage do
   defp message({:missing_layout, path, layout}),
     do: {"Missing layout: could not find #{inspect(layout)} for #{path}", []}
 
-  defp message({:layout_render_failed, path, error}),
-    do: {"Layout render failed for #{path}: " <> Exception.format_banner(:error, error), []}
+  defp message({:eex_layout_unsupported, path}),
+    do:
+      {"EEx layouts are no longer supported: convert #{path} to a .astral layout component " <>
+         "that renders the page with {render_slot(@inner_block)}", []}
+
+  defp message({:component_alias_shadowed, path, name}),
+    do:
+      {"#{path} aliases #{name}, which is also a component directory, so <#{name}.*> " <>
+         "calls would resolve to the alias. Rename the alias with `as:` or the directory.", []}
+
+  defp message({:component_directory_shadows_module, dir, name}),
+    do:
+      {"Component directory #{dir} would shadow the #{name} module in templates. " <>
+         "Rename the directory.", []}
+
+  defp message({:component_directory_shadows_layouts, dir}),
+    do: {"Component directory #{dir} clashes with the Layouts module. Rename the directory.", []}
+
+  defp message({:invalid_component_directory, dir}),
+    do:
+      {"Invalid component directory #{dir}: use lowercase letters, digits and underscores, " <>
+         "starting with a letter", []}
 
   defp message({:missing_pages_dir, path}),
     do: {"Missing pages directory: expected #{path}", []}
-
-  defp message({:layout_read_failed, path, reason}),
-    do: {"Layout read failed: could not read #{path}: #{inspect(reason)}", []}
 
   defp message({:exception, exception, stacktrace}),
     do: {Exception.format_banner(:error, exception), stacktrace}

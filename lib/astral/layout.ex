@@ -1,86 +1,66 @@
 defmodule Astral.Layout do
   @moduledoc """
-  Renders page layouts with EEx assigns.
+  Wraps Markdown, HTML and generated pages in layout components.
+
+  A layout is a `.astral` component in the layouts directory. It receives the
+  page assigns as attributes and the page HTML as its inner block:
+
+  ```heex
+  <html>
+    <body>{render_slot(@inner_block)}</body>
+  </html>
+  ```
+
+  `.astral` pages don't get a layout; they wrap themselves, as in
+  `<Layouts.site title="About">...</Layouts.site>`.
+
+  A page names its layout through Markdown frontmatter or its collection, and
+  falls back to the site's default layout. `false`, `"false"` and `"none"`
+  render without a layout. A named layout that does not exist is an error; a
+  missing site default renders without a layout.
   """
 
-  @doc "Render page HTML through an optional EEx layout."
-  @spec render(
-          String.t(),
-          String.t() | Astral.Template.Source.t() | nil,
-          Astral.Page.t(),
-          Astral.Site.t()
-        ) ::
+  @doc "Render page HTML inside its layout."
+  @spec render(String.t(), Astral.Content.layout(), Astral.Page.t(), Astral.Site.t()) ::
           {:ok, String.t()} | {:error, term()}
-  def render(content, nil, _page, _site), do: {:ok, content}
-
-  def render(content, %Astral.Template.Source{} = layout, page, site) do
-    Astral.Template.render(layout, template_assigns(assigns(content, page, site)), site.config)
+  def render(content, layout, %Astral.Page{} = page, site) do
+    render_layout(content, layout, Astral.Page.assigns(page, site), page.source_path, site)
   end
 
-  def render(content, layout, page, site) do
-    eval_layout(layout, assigns(content, page, site), page.source_path)
-  end
-
-  @doc "Render generated route HTML through an optional EEx layout."
-  @spec render_route(
-          String.t(),
-          String.t() | Astral.Template.Source.t() | nil,
-          Astral.Route.t(),
-          Astral.Site.t()
-        ) ::
+  @doc "Render generated route HTML inside its layout."
+  @spec render_route(String.t(), Astral.Content.layout(), Astral.Route.t(), Astral.Site.t()) ::
           {:ok, String.t()} | {:error, term()}
-  def render_route(content, nil, _route, _site), do: {:ok, content}
-
-  def render_route(content, %Astral.Template.Source{} = layout, route, site) do
-    Astral.Template.render(
-      layout,
-      template_assigns(route_assigns(content, route, site)),
-      site.config
-    )
+  def render_route(content, layout, %Astral.Route{} = route, site) do
+    render_layout(content, layout, route_assigns(route, site), route.path, site)
   end
 
-  def render_route(content, layout, route, site) do
-    eval_layout(layout, route_assigns(content, route, site), route.path)
+  defp render_layout(content, layout, assigns, source, site) do
+    case choose(layout, site.config.layout) do
+      nil ->
+        {:ok, content}
+
+      {kind, name} ->
+        name
+        |> Astral.Template.render_layout(content, assigns, site.config)
+        |> layout_result(kind, content, source, name)
+    end
   end
 
-  defp eval_layout(layout, assigns, source) do
-    {:ok, EEx.eval_string(layout, assigns: assigns)}
-  rescue
-    error in [
-      EEx.SyntaxError,
-      SyntaxError,
-      CompileError,
-      RuntimeError,
-      ArgumentError,
-      KeyError,
-      UndefinedFunctionError
-    ] ->
-      {:error, {:layout_render_failed, source, error}}
-  end
+  defp layout_result({:error, :missing_layout}, :default, content, _source, _name),
+    do: {:ok, content}
 
-  defp assigns(content, page, site) do
+  defp layout_result({:error, :missing_layout}, :named, _content, source, name),
+    do: {:error, {:missing_layout, source, name}}
+
+  defp layout_result(result, _kind, _content, _source, _name), do: result
+
+  defp choose(layout, _default) when layout in [false, "false", "none"], do: nil
+  defp choose(nil, default) when default in [nil, false, "false", "none"], do: nil
+  defp choose(nil, default), do: {:default, default}
+  defp choose(layout, _default), do: {:named, layout}
+
+  defp route_assigns(route, site) do
     %{
-      content: content,
-      page: page.content,
-      metadata: page.content.metadata,
-      route: page.route_path,
-      params: page.params,
-      site: site,
-      collections: site.entries,
-      entry: page.entry,
-      routes: site.routes
-    }
-    |> Map.merge(page.assigns)
-    |> Map.to_list()
-  end
-
-  defp template_assigns(assigns) do
-    Keyword.update!(assigns, :content, &Phoenix.HTML.raw/1)
-  end
-
-  defp route_assigns(content, route, site) do
-    %{
-      content: content,
       route: route.path,
       generated_route: route,
       site: site,
@@ -88,6 +68,5 @@ defmodule Astral.Layout do
       routes: site.routes
     }
     |> Map.merge(route.assigns)
-    |> Map.to_list()
   end
 end

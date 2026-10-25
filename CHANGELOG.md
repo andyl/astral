@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.0 - 2026-10-25
+
+### Breaking changes
+
+- Layouts are `.astral` components, called as `<Layouts.site>` for `layouts/site.astral`. A layout renders the page with `{render_slot(@inner_block)}` instead of `@content`, and receives the page's assigns as attributes, including a new `@title` from frontmatter. EEx `.html` layouts are no longer supported; Astral reports the first one it finds. Convert `<%= @x %>` to `{@x}`, `attr="<%= @x %>"` to `attr={@x}`, `<%= @content %>` to `{render_slot(@inner_block)}`, and rename the file to `.astral`. HEEx escapes interpolated values, which EEx layouts did not.
+- `.astral` pages no longer get the site default or collection layout. They wrap themselves, as in `<Layouts.default {assigns}>...</Layouts.default>`, so a title or other value assigned in the setup block reaches the layout. Markdown and HTML pages still use their frontmatter, collection or default layout.
+- Layout names drop the extension: `layout: post` and `default "default"` instead of `post.html` and `default.html`. The default layout name is now `"default"`. A trailing `.astral` is still accepted.
+- Components in subdirectories of `components/` are modules called with HEEx's remote syntax: `components/article/figure.astral` is `<Article.figure>` instead of `<.article_figure>`. Files at the top of `components/` are still `<.name>`. A directory whose module name matches an existing module, a `components/layouts/` directory, or a setup-block alias with the same name as a component directory is now an error.
+- `Astral.Site` no longer has a `layouts` field.
+
+### Changed
+
+- Components compile once per build instead of once into every page module, which makes builds of sites with many pages and components faster.
+
 ## 0.7.1 - 2026-10-07
 
 ### Changed

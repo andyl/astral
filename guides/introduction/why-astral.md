@@ -10,7 +10,7 @@ Astral project configuration lives in `astral.config.exs`:
 import Astral.Config
 
 layouts do
-  default "default.html"
+  default "default"
 end
 
 assets do
