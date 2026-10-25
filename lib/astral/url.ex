@@ -4,8 +4,9 @@ defmodule Astral.URL do
 
   Route paths such as `page.route_path`, `entry.route_path` and `route.path`
   stay relative to the site's base path: they name a route and its output file.
-  The helpers here turn those route paths into the URLs browsers request, so a
-  site configured with `base_path "/docs/"` links `/about/` as `/docs/about/`.
+  Pages and entries also carry a `url` built once by `path/2` during discovery.
+  The helpers here turn route paths into the URLs browsers request, so a site
+  configured with `base_path "/docs/"` links `/about/` as `/docs/about/`.
   """
 
   @type source :: Astral.Site.t() | Astral.Config.t()

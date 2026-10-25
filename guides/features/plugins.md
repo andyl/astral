@@ -60,7 +60,7 @@ defmodule MySite.SearchIndex do
   @impl true
   def render_route(%Astral.Route{path: "/search.json"}, site) do
     entries = Map.get(site.entries, :posts, [])
-    {:ok, JSON.encode!(Enum.map(entries, &%{title: &1.data.title, url: &1.route_path}))}
+    {:ok, JSON.encode!(Enum.map(entries, &%{title: &1.data.title, url: &1.url}))}
   end
 
   def render_route(_route, _site), do: nil

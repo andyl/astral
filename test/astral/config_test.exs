@@ -160,7 +160,7 @@ defmodule Astral.ConfigTest do
         base_path("demo_site")
 
         assets do
-          url_prefix("/static")
+          url_prefix("/demo_site/static")
         end
       end
 
@@ -177,9 +177,21 @@ defmodule Astral.ConfigTest do
     assert config.asset_url_prefix == "/assets"
   end
 
-  test "base path prefixes the default asset URL prefix but not absolute prefixes" do
+  test "base path sets the default asset URL prefix but not a configured one" do
     assert Astral.Config.new(root: "/tmp/astral", base_path: "/docs/").asset_url_prefix ==
              "/docs/assets"
+
+    assert Astral.Config.new(
+             root: "/tmp/astral",
+             base_path: "/repo/",
+             asset_url_prefix: "/repo/assets"
+           ).asset_url_prefix == "/repo/assets"
+
+    assert Astral.Config.new(
+             root: "/tmp/astral",
+             base_path: "/docs/",
+             asset_url_prefix: "/static"
+           ).asset_url_prefix == "/static"
 
     assert Astral.Config.new(
              root: "/tmp/astral",

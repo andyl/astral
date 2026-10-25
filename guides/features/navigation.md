@@ -13,11 +13,14 @@ Use normal `<a>` elements in `.astral`, Markdown, and layouts:
 <a href="/blog/hello-astral/">Read the post</a>
 ```
 
-When the site is served under a `base_path`, build site links with `Astral.url/2` so they carry the prefix:
+When the site is served under a `base_path`, links need the prefix. Pages and entries carry it in their `url`, and `Astral.url/2` adds it to any other route path:
 
 ```astral
+<a href={@entry.url}>Permalink</a>
 <a href={Astral.url(@site, "/about/")}>About</a>
 ```
+
+Links written directly in Markdown are not rewritten.
 
 Astral does not currently inject a client-side router. A link click performs a normal browser navigation unless your own JavaScript intercepts it.
 

@@ -807,10 +807,11 @@ defmodule Astral.BuilderTest do
     write("pages/index.astral", ~S'''
     <link rel="stylesheet" href={Astral.asset_path(@site, "styles.css")} />
     <a href={Astral.url(@site, "/about/")}>About</a>
+    <a href={@url} data-route={@route}>Home</a>
     <.image src="images/hero.svg" alt="Hero" width={60} format={:webp} />
     ''')
 
-    assert {:ok, _result} =
+    assert {:ok, result} =
              Astral.build(
                root: tmp(),
                layout: false,
@@ -819,13 +820,48 @@ defmodule Astral.BuilderTest do
                asset_hash: false
              )
 
+    assert %Astral.Page{route_path: "/about/", url: "/demo_site/about/"} =
+             Enum.find(result.site.pages, &(&1.route_path == "/about/"))
+
     html = read("dist/index.html")
     assert html =~ ~s(href="/demo_site/assets/styles.css")
     assert html =~ ~s(href="/demo_site/about/")
+    assert html =~ ~s(<a href="/demo_site/" data-route="/">Home</a>)
     assert html =~ ~r/src="\/demo_site\/assets\/hero-60x30-[^"]+\.webp"/
     assert read("dist/about/index.html") =~ "About"
-    assert read("dist/assets/styles.css") =~ "/demo_site/assets/"
     refute File.exists?(Path.join(tmp(), "dist/demo_site"))
+
+    [_, css_url] = Regex.run(~r/url\("?([^")]+)"?\)/, read("dist/assets/styles.css"))
+    assert String.starts_with?(css_url, "/demo_site/assets/")
+
+    assert File.exists?(
+             Path.join([tmp(), "dist", String.replace_prefix(css_url, "/demo_site/", "")])
+           )
+  end
+
+  test "keeps a configured asset URL prefix absolute under a base path" do
+    write("assets/images/mark.svg", svg_image(10, 10, "blue"))
+    write("assets/styles.css", ".mark { background: url(\"./images/mark.svg\") }")
+
+    write("pages/index.astral", ~S'''
+    <link rel="stylesheet" href={Astral.asset_path(@site, "styles.css")} />
+    ''')
+
+    assert {:ok, _result} =
+             Astral.build(
+               root: tmp(),
+               layout: false,
+               base_path: "/repo/",
+               asset_url_prefix: "/repo/assets",
+               asset_entry: ["styles.css"],
+               asset_hash: false
+             )
+
+    assert read("dist/index.html") =~ ~s(href="/repo/assets/styles.css")
+
+    [_, css_url] = Regex.run(~r/url\("?([^")]+)"?\)/, read("dist/assets/styles.css"))
+    assert String.starts_with?(css_url, "/repo/assets/")
+    refute css_url =~ "/repo/repo/"
   end
 
   test "builds Volt assets when an asset entry exists" do

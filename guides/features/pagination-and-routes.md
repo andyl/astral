@@ -137,7 +137,7 @@ The pagination layout is a layout component that receives `@page`, `@collection`
 <h1>Blog</h1>
 
 <article :for={entry <- @page.entries}>
-  <h2><a href={entry.route_path}>{entry.data.title}</a></h2>
+  <h2><a href={entry.url}>{entry.data.title}</a></h2>
 </article>
 
 <nav>
@@ -146,7 +146,7 @@ The pagination layout is a layout component that receives `@page`, `@collection`
 </nav>
 ```
 
-`@page.urls` already include the site's `base_path`. `entry.route_path` does not, so link entries through `Astral.url/2`.
+`@page.urls` and `entry.url` include the site's `base_path`. Route paths such as `@route` and `entry.route_path` do not: they identify the route and its output file.
 
 ## Lower-level pagination helpers
 

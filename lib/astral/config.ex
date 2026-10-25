@@ -6,8 +6,9 @@ defmodule Astral.Config do
   repeatedly resolving them against the site root.
 
   `base_path` is normalized with leading and trailing slashes, such as `"/"` or
-  `"/docs/"`. The configured asset URL prefix is relative to it, so
-  `asset_url_prefix` holds the public prefix with the base path applied.
+  `"/docs/"`. `asset_url_prefix` is an absolute public prefix and is not nested
+  under `base_path`; when it is not configured, it defaults to the base path
+  followed by `assets`, such as `"/docs/assets"`.
   """
 
   @type t :: %__MODULE__{
@@ -127,7 +128,7 @@ defmodule Astral.Config do
   @doc "Set the browser output directory, relative to the site output directory."
   defdirective(asset_outdir(path), do: Scope.put_top_level(asset_outdir: path))
 
-  @doc "Set the public URL prefix used for browser assets."
+  @doc ~S(Set the absolute public URL prefix used for browser assets. Defaults to `base_path` followed by `"assets"`.)
   defdirective(asset_url_prefix(prefix), do: Scope.put_top_level(asset_url_prefix: prefix))
 
   @doc "Collect image settings in a scoped configuration block."
@@ -219,7 +220,7 @@ defmodule Astral.Config do
   @doc "Append a browser entry in an assets block."
   defdirective(entry(path), do: Scope.put_top_level(asset_entry: [path]))
 
-  @doc "Set the browser asset URL prefix in an assets block."
+  @doc ~S(Set the absolute browser asset URL prefix in an assets block. Defaults to `base_path` followed by `"assets"`.)
   defdirective(url_prefix(prefix), do: Scope.put_top_level(asset_url_prefix: prefix))
 
   @doc "Enable or disable content hashes in generated browser asset filenames."
@@ -301,8 +302,7 @@ defmodule Astral.Config do
       outdir: outdir,
       asset_entry: asset_entries(opts, assets),
       asset_outdir: path(opts, :asset_outdir, outdir, "assets"),
-      asset_url_prefix:
-        Astral.URL.join(base_path, Keyword.get(opts, :asset_url_prefix, "/assets")),
+      asset_url_prefix: Keyword.get(opts, :asset_url_prefix, base_path <> "assets"),
       asset_hash: Keyword.get(opts, :asset_hash, true),
       layout: Keyword.get(opts, :layout, "default"),
       markdown: Keyword.get(opts, :markdown, []),

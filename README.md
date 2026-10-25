@@ -140,7 +140,7 @@ end
 Use validated data from layouts and templates:
 
 ```astral
-<a :for={post <- @collections.posts} href={post.route_path}>{post.data.title}</a>
+<a :for={post <- @collections.posts} href={post.url}>{post.data.title}</a>
 ```
 
 Collection-backed dynamic file routes let page templates own the detail page HTML:
