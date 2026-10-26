@@ -57,7 +57,6 @@ end
 
 assets do
   entry "app.ts"
-  url_prefix "/assets"
 end
 ```
 

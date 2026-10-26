@@ -156,17 +156,17 @@ defmodule Astral.ConfigTest do
     config =
       site do
         root("/tmp/astral")
-        site_url("https://andyl.github.io")
-        base_path("demo_site")
+        site_url("https://example.github.io")
+        base_path("my-site")
 
         assets do
-          url_prefix("/demo_site/static")
+          url_prefix("/my-site/static")
         end
       end
 
-    assert config.site_url == "https://andyl.github.io"
-    assert config.base_path == "/demo_site/"
-    assert config.asset_url_prefix == "/demo_site/static"
+    assert config.site_url == "https://example.github.io"
+    assert config.base_path == "/my-site/"
+    assert config.asset_url_prefix == "/my-site/static"
   end
 
   test "base path defaults to the domain root" do

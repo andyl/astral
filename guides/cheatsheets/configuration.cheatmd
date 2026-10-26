@@ -23,8 +23,8 @@ components "components"
 ## Site URL and base path
 
 ```elixir
-site_url "https://andyl.github.io"
-base_path "/demo_site/"
+site_url "https://example.github.io"
+base_path "/my-site/"
 ```
 
 `base_path` defaults to `"/"`. Pages and entries carry a `url` with the base path applied; build other links with `Astral.url/2`:
@@ -57,7 +57,6 @@ end
 ```elixir
 assets do
   entry "app.ts"
-  url_prefix "/assets"
   hash true
 end
 ```

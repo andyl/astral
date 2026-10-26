@@ -815,27 +815,27 @@ defmodule Astral.BuilderTest do
              Astral.build(
                root: tmp(),
                layout: false,
-               base_path: "/demo_site/",
+               base_path: "/my-site/",
                asset_entry: ["styles.css"],
                asset_hash: false
              )
 
-    assert %Astral.Page{route_path: "/about/", url: "/demo_site/about/"} =
+    assert %Astral.Page{route_path: "/about/", url: "/my-site/about/"} =
              Enum.find(result.site.pages, &(&1.route_path == "/about/"))
 
     html = read("dist/index.html")
-    assert html =~ ~s(href="/demo_site/assets/styles.css")
-    assert html =~ ~s(href="/demo_site/about/")
-    assert html =~ ~s(<a href="/demo_site/" data-route="/">Home</a>)
-    assert html =~ ~r/src="\/demo_site\/assets\/hero-60x30-[^"]+\.webp"/
+    assert html =~ ~s(href="/my-site/assets/styles.css")
+    assert html =~ ~s(href="/my-site/about/")
+    assert html =~ ~s(<a href="/my-site/" data-route="/">Home</a>)
+    assert html =~ ~r/src="\/my-site\/assets\/hero-60x30-[^"]+\.webp"/
     assert read("dist/about/index.html") =~ "About"
-    refute File.exists?(Path.join(tmp(), "dist/demo_site"))
+    refute File.exists?(Path.join(tmp(), "dist/my-site"))
 
     [_, css_url] = Regex.run(~r/url\("?([^")]+)"?\)/, read("dist/assets/styles.css"))
-    assert String.starts_with?(css_url, "/demo_site/assets/")
+    assert String.starts_with?(css_url, "/my-site/assets/")
 
     assert File.exists?(
-             Path.join([tmp(), "dist", String.replace_prefix(css_url, "/demo_site/", "")])
+             Path.join([tmp(), "dist", String.replace_prefix(css_url, "/my-site/", "")])
            )
   end
 

@@ -135,8 +135,8 @@ defmodule Astral.Plugin.FeedTest do
     config =
       Astral.Config.new(
         root: root,
-        site_url: "https://andyl.github.io",
-        base_path: "/demo_site/",
+        site_url: "https://example.github.io",
+        base_path: "/my-site/",
         plugins: [Astral.Plugin.Feed],
         collections: [
           [
@@ -157,9 +157,9 @@ defmodule Astral.Plugin.FeedTest do
     assert {:ok, _result} = Astral.build(config)
 
     feed = File.read!(Path.join(root, "dist/feed.xml"))
-    assert feed =~ "<id>https://andyl.github.io/demo_site/feed.xml</id>"
-    assert feed =~ ~s(<link href="https://andyl.github.io/demo_site/feed.xml" rel="self"/>)
-    assert feed =~ "<id>https://andyl.github.io/demo_site/blog/hello/</id>"
+    assert feed =~ "<id>https://example.github.io/my-site/feed.xml</id>"
+    assert feed =~ ~s(<link href="https://example.github.io/my-site/feed.xml" rel="self"/>)
+    assert feed =~ "<id>https://example.github.io/my-site/blog/hello/</id>"
   end
 
   test "requires a site URL from options or config", %{root: root} do

@@ -130,4 +130,6 @@ Available hooks include:
 - `render_page/3`
 - `build_done/1`
 
+A `site_discovered/1` hook that changes a page's or entry's `route_path` must update its `url` too, with `Astral.url/2`, so links keep the base path.
+
 Use `enforce/0` to return `:pre` or `:post` when ordering matters.

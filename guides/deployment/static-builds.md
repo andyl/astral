@@ -43,8 +43,8 @@ For generated host files that depend on site data, use config `get` routes or pl
 Some hosts serve a site below the domain root. GitHub Pages serves project sites at `https://<user>.github.io/<repo>/`, and a Phoenix app can mount docs at `/docs/`. Set `base_path` so Astral emits URLs under that path:
 
 ```elixir
-site_url "https://andyl.github.io"
-base_path "/demo_site/"
+site_url "https://example.github.io"
+base_path "/my-site/"
 ```
 
 `base_path` defaults to `"/"`. Output files stay at the root of `dist/`: publish `dist/` as the content of the sub-path.
@@ -83,7 +83,6 @@ Astral delegates JavaScript, TypeScript, CSS, and referenced asset processing to
 ```elixir
 assets do
   entry "app.ts"
-  url_prefix "/assets"
 end
 ```
 
@@ -106,7 +105,6 @@ For simple prototypes or examples, disable hashing:
 ```elixir
 assets do
   entry "app.ts"
-  url_prefix "/assets"
   hash false
 end
 ```

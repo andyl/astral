@@ -99,15 +99,15 @@ defmodule Astral.Plugin.SitemapTest do
     config =
       Astral.Config.new(
         root: root,
-        site_url: "https://andyl.github.io",
-        base_path: "/demo_site/",
+        site_url: "https://example.github.io",
+        base_path: "/my-site/",
         plugins: [Astral.Plugin.Sitemap]
       )
 
     assert {:ok, _result} = Astral.build(config)
 
     sitemap = File.read!(Path.join(root, "dist/sitemap.xml"))
-    assert sitemap =~ "<loc>https://andyl.github.io/demo_site/</loc>"
-    assert sitemap =~ "<loc>https://andyl.github.io/demo_site/about/</loc>"
+    assert sitemap =~ "<loc>https://example.github.io/my-site/</loc>"
+    assert sitemap =~ "<loc>https://example.github.io/my-site/about/</loc>"
   end
 end
